@@ -1,7 +1,7 @@
 #include "json_lex.h"
 
-bool JsonLexer::next(char c, char next_c,
-                       token_t *token, string *token_text) {
+bool JsonLexer::next(char c, char next_c, bool peek,
+                     token_t &token, string &token_text) {
     // printf("char: %c in_string: %d escape = %d\n", c, in_string, escape);
     if ( in_string ) {
         if ( !escape and c == '\\' ) {
@@ -9,7 +9,7 @@ bool JsonLexer::next(char c, char next_c,
             return false;
         } else if ( !escape and c == '"' ) {
             in_string = false;
-            *token = TOKEN_STRING;
+            token = TOKEN_STRING;
         } else {
             val += c;
             escape = false;
@@ -17,25 +17,28 @@ bool JsonLexer::next(char c, char next_c,
         }
     } else {
         if ( c == ' ' or c == '\t' or c == '\n' or c == '\r' ) {
+            if ( !peek and c == '\n' ) {
+                line_number++;
+            }
             return false;
         } else if ( c == '{' ) {
             val = c;
-            *token = TOKEN_DICT_BEGIN;
+            token = TOKEN_DICT_BEGIN;
         } else if ( c == '}' ) {
             val = c;
-            *token = TOKEN_DICT_END;
+            token = TOKEN_DICT_END;
         } else if ( c == '[' ) {
             val = c;
-            *token = TOKEN_LIST_BEGIN;
+            token = TOKEN_LIST_BEGIN;
         } else if ( c == ']' ) {
             val = c;
-            *token = TOKEN_LIST_END;
+            token = TOKEN_LIST_END;
         } else if ( c == ':' ) {
             val = c;
-            *token = TOKEN_COLON;
+            token = TOKEN_COLON;
         } else if ( c == ',' ) {
             val = c;
-            *token = TOKEN_COMMA;
+            token = TOKEN_COMMA;
         } else if ( c == '"' ) {
             in_string = true;
             val = "";
@@ -48,7 +51,7 @@ bool JsonLexer::next(char c, char next_c,
                 return false;
             }
             in_number = false;
-            *token = TOKEN_INT;
+            token = TOKEN_INT;
         } else if ( in_number and is_real(c) ) {
             val += c;
             if ( !is_digit(c) ) {
@@ -59,9 +62,9 @@ bool JsonLexer::next(char c, char next_c,
             }
             in_number = false;
             if ( ! is_float ) {
-                *token = TOKEN_INT;
+                token = TOKEN_INT;
             } else {
-                *token = TOKEN_REAL;
+                token = TOKEN_REAL;
             }
         } else {
             printf("unhandled character: %d\n", c);
@@ -69,24 +72,34 @@ bool JsonLexer::next(char c, char next_c,
         }
     }
     
-    *token_text = val;
+    token_text = val;
     return true;
 }
 
-int main() {
-    JsonLexer slex;
-    JsonLexer::token_t token;
-    string val;
-
-    char last_c = 0;
-    while ( true ) {
-        char c = getchar();
-        if ( last_c == EOF ) {
-            break;
+bool JsonLexer::get_token(token_t &next_token, string &next_text, bool peek ) {
+    char c = 0;
+    char next_c = 0;
+    int n = index;
+    while ( n < buf.length() ) {
+        c = buf[n];
+        if ( n < buf.length() ) {
+            next_c = buf[n+1];
+        } else {
+            next_c = EOF;
         }
-        if ( slex.next(last_c, c, &token, &val) ) {
-            printf("token: %d val: %s\n", token, val.c_str());
+        n++;
+        
+        token_t token;
+        string val;
+        if ( next(c, next_c, peek, token, val) ) {
+            // printf("token: %d val: %s\n", token, val.c_str());
+            next_token = token;
+            next_text = val;
+            if ( !peek ) {
+                index = n;
+            }
+            return true;
         }
-        last_c = c;
     }
+    return false;
 }
