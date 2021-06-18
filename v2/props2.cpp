@@ -16,10 +16,29 @@ PropertyNode::PropertyNode(string abs_path, bool create) {
     Value& node = d;
     for ( int i = 0; i < parts.size(); i++ ) {
     }
-    p = Pointer(abs_path.c_str());
+    Pointer p = Pointer(abs_path.c_str());
     if ( create ) {
         p.Create(d);
     }
+    v = p.Get(d);
+}
+
+bool PropertyNode::hasChild( const char *name ) {
+    if ( v->IsObject() ) {
+        if ( v->HasMember(name) ) {
+            return true;
+        }
+    }
+    return false;
+}
+
+PropertyNode PropertyNode::getChild( const char *name, bool create ) {
+    if ( v->IsObject() ) {
+        if (v->HasMember(name) ) {
+            // return true;
+        }
+    }
+    return PropertyNode();
 }
 
 static bool getValueAsBool( Value &v ) {
@@ -122,64 +141,95 @@ static double getValueAsDouble( Value &v ) {
     return 0.0;
 }
 
+static string getValueAsString( Value &v ) {
+    if ( v.IsBool() ) {
+        if ( v.GetBool() ) {
+            return "true";
+        } else {
+            return "false";
+        }
+    } else if ( v.IsInt() ) {
+        return std::to_string(v.GetInt());
+    } else if ( v.IsUint() ) {
+        return std::to_string(v.GetUint());
+    } else if ( v.IsInt64() ) {
+        return std::to_string(v.GetInt64());
+    } else if ( v.IsUint64() ) {
+        return std::to_string(v.GetUint64());
+    } else if ( v.IsFloat() ) {
+        return std::to_string(v.GetFloat());
+    } else if ( v.IsDouble() ) {
+        return std::to_string(v.GetDouble());
+    } else if ( v.IsString() ) {
+        return v.GetString();
+    } else {
+        printf("Unknown type in getValueAsBool()\n");
+    }
+    return "";
+}
+
 bool PropertyNode::getBool( const char *name ) {
-    Value *parent = p.Get(d);
-    if ( parent->IsObject() ) {
-        if ( parent->HasMember(name) ) {
-            return getValueAsBool((*parent)[name]);
+    if ( v->IsObject() ) {
+        if ( v->HasMember(name) ) {
+            return getValueAsBool((*v)[name]);
         }
     }
     return false;
 }
 
 int PropertyNode::getInt( const char *name ) {
-    Value *parent = p.Get(d);
-    if ( parent->IsObject() ) {
-        if ( parent->HasMember(name) ) {
-            return getValueAsInt((*parent)[name]);
+    if ( v->IsObject() ) {
+        if ( v->HasMember(name) ) {
+            return getValueAsInt((*v)[name]);
         }
     }
     return 0;
 }
 
 float PropertyNode::getFloat( const char *name ) {
-    Value *parent = p.Get(d);
-    if ( parent->IsObject() ) {
-        if ( parent->HasMember(name) ) {
-            return getValueAsFloat((*parent)[name]);
+    if ( v->IsObject() ) {
+        if ( v->HasMember(name) ) {
+            return getValueAsFloat((*v)[name]);
         }
     }
     return 0.0;
 }
 
 double PropertyNode::getDouble( const char *name ) {
-    Value *parent = p.Get(d);
-    if ( parent->IsObject() ) {
-        if ( parent->HasMember(name) ) {
-            return getValueAsDouble((*parent)[name]);
+    if ( v->IsObject() ) {
+        if ( v->HasMember(name) ) {
+            return getValueAsDouble((*v)[name]);
         }
     }
     return 0.0;
 }
 
+string PropertyNode::getString( const char *name ) {
+    if ( v->IsObject() ) {
+        if ( v->HasMember(name) ) {
+            return getValueAsString((*v)[name]);
+        }
+    }
+    return "";
+}
+
 bool PropertyNode::setInt( const char *name, long val ) {
-    Value *parent = p.Get(d);
-    if ( !parent->IsObject() ) {
-        parent->SetObject();
+    if ( !v->IsObject() ) {
+        v->SetObject();
     }
     Value newval(val);
-    if ( !parent->HasMember(name) ) {
+    if ( !v->HasMember(name) ) {
         printf("creating %s\n", name);
         Value key(name, d.GetAllocator());
-        parent->AddMember(key, newval, d.GetAllocator());
+        v->AddMember(key, newval, d.GetAllocator());
     } else {
         printf("%s already exists\n");
     }
-    (*parent)[name] = val;
+    (*v)[name] = val;
     return true;
 }
 
-
+Document d;
 
 int main() {
    // suck in all the input
@@ -201,7 +251,8 @@ int main() {
     printf("%ld\n", n1.getInt("curt"));
     printf("As bool: %d\n", n1.getBool("curt"));
     printf("As double: %.2f\n", n1.getDouble("curt"));
+    string s = n1.getString("curt");
+    printf("As string: %s\n", s.c_str());
 
 }
 
-Document d;

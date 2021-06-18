@@ -68,7 +68,8 @@ public:
     void pretty_print();
     
 private:
-    Pointer p;
+    // Pointer p;
+    Value *v;
 };
 
 
