@@ -21,7 +21,7 @@ public:
     // Constructor.
     PropertyNode();
     PropertyNode(string abs_path, bool create=false);
-    // PropertyNode(const PropertyNode &node); // copy constructor
+    PropertyNode(Value *value);
 
     // Destructor.
     // ~PropertyNode();
@@ -39,7 +39,7 @@ public:
     void setLen( const char *name, int size); // set len of name
     void setLen( const char *name, int size, double init_val); // set len of name
 
-    vector <string> getChildren(bool expand=true); // return list of children
+    vector<string> getChildren(bool expand=true); // return list of children
 
     bool isLeaf( const char *name); // return true if pObj/name is leaf
     
@@ -69,7 +69,7 @@ public:
     
 private:
     // Pointer p;
-    Value *v;
+    Value *v = NULL;
 };
 
 
