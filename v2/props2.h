@@ -1,5 +1,9 @@
 #pragma once
 
+#if defined(ARDUPILOT_BUILD)
+#  undef _GLIBCXX_USE_C99_STDIO   // vsnprintf() not defind
+#endif
+
 #include <string>
 #include <vector>
 using std::string;
@@ -13,15 +17,15 @@ using namespace rapidjson;
 // property system style interface with a rapidjson document as the backend
 //
 
-extern Document d;
+extern Document doc;
 
 class PropertyNode
 {
 public:
     // Constructor.
     PropertyNode();
-    PropertyNode(string abs_path, bool create=false);
-    PropertyNode(Value *value);
+    PropertyNode(string abs_path, bool create=true);
+    PropertyNode(Value *v);
 
     // Destructor.
     // ~PropertyNode();
@@ -30,8 +34,8 @@ public:
     // PropertyNode & operator= (const PropertyNode &node);
 
     bool hasChild(const char *name );
-    PropertyNode getChild( const char *name, bool create=false );
-    PropertyNode getChild( const char *name, int index, bool create=false );
+    PropertyNode getChild( const char *name, bool create=true );
+    PropertyNode getChild( const char *name, int index, bool create=true );
 
     bool isNull();		// return true if pObj pointer is NULL
     
@@ -57,10 +61,11 @@ public:
     string getString( const char *name, int index ); // return value as a string
 
     // value setters
-    bool setDouble( const char *name, double val ); // returns true if successful
-    bool setInt( const char *name, long val );     // returns true if successful
     bool setBool( const char *name, bool val );     // returns true if successful
-    bool setString( const char *name, string val ); // returns true if successful
+    bool setInt( const char *name, int n );     // returns true if successful
+    bool setFloat( const char *name, float x ); // returns true if successful
+    bool setDouble( const char *name, double x ); // returns true if successful
+    bool setString( const char *name, string s ); // returns true if successful
 
     // indexed value setters
     bool setDouble( const char *name, int index, double val  ); // returns true if successful
@@ -69,7 +74,7 @@ public:
     
 private:
     // Pointer p;
-    Value *v = NULL;
+    Value *val;
 };
 
 
@@ -86,7 +91,7 @@ extern void pyPropsCleanup(void);
 // recommended to call this function from initialization routines and
 // save the result.  Then use the rjPropertyNode for direct read/write
 // access in your update routines.
-extern PropertyNode GetNode(string abs_path, bool create=false);
+// extern PropertyNode GetNode(string abs_path, bool create=false);
 
 // Read a json file and place the results at specified node
 extern bool readJSON(string filename, PropertyNode *node);

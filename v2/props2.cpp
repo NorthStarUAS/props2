@@ -1,34 +1,89 @@
-#include <string>
-using std::string;
+#if defined(ARDUINO_BUILD)
+#  undef _GLIBCXX_USE_C99_STDIO   // vsnprintf() not defind
+#  include "setup_board.h"
+#endif
 
-#include "strutils.h"
+#include <stdio.h>
+
+#include <vector>
+#include <string>
+using std::vector;
+using std::string;
 
 #include "rapidjson/stringbuffer.h"
 #include "rapidjson/prettywriter.h"
 
+#include "strutils.h"
 #include "props2.h"
+
+void pretty_print_doc() {
+    StringBuffer buffer;
+    PrettyWriter<StringBuffer> writer(buffer);
+    doc.Accept(writer);
+    //const char* output = buffer.GetString();
+    printf("%s\n", buffer.GetString());
+}
 
 PropertyNode::PropertyNode() {
 }
 
+// PropertyNode::PropertyNode(string abs_path, bool create) {
+//     printf("PropertyNode(%s)\n", abs_path.c_str());
+//     p = Pointer(abs_path.c_str());
+//     Value *val = p.Get(doc);
+//     if ( val == nullptr and create ) {
+//         printf("  creating\n");
+//         p.Create(doc);
+//     }
+//     val = p.Get(doc);
+//     if (val == nullptr) {
+//         printf("  val is still null\n");
+//     }
+//     if ( !val->IsObject() ) {
+//         printf("  setting as object\n");
+//         val->SetObject();
+//     }
+// }
+
 PropertyNode::PropertyNode(string abs_path, bool create) {
-    Pointer p = Pointer(abs_path.c_str());
-    if ( create ) {
-        p.Create(d);
+    printf("PropertyNode(%s)\n", abs_path.c_str());
+    if ( abs_path[0] != '/' ) {
+        printf("  not an absolute path\n");
+        return;
     }
-    v = p.Get(d);
-    if ( v != NULL ) {
-        v->SetObject();
+    if ( !doc.IsObject() ) {
+        doc.SetObject();
     }
+    vector<string> tokens = split(abs_path, "/");
+    Value *node = &doc;
+    for ( int i = 0; i < tokens.size(); i++ ) {
+        if ( tokens[i].length() == 0 ) {
+            continue;
+        }
+        printf("  token: %s\n", tokens[i].c_str());
+        if ( !node->HasMember(tokens[i].c_str()) and create ) {
+            printf("    creating\n");
+            Value key(tokens[i].c_str(), doc.GetAllocator());
+            Value newobj(kObjectType);
+            newobj.SetObject();
+            // node->AddMember(key, newobj, doc.GetAllocator());
+            node->AddMember(GenericStringRef(tokens[i].c_str(), tokens[i].length()), newobj, doc.GetAllocator());
+            pretty_print_doc();
+        } else if ( !node->HasMember(tokens[i].c_str()) ) {
+            return;
+        }
+        node = &(*node)[tokens[i].c_str()];
+    }
+    val = node;
 }
 
-PropertyNode::PropertyNode(Value *value) {
-    v = value;
+PropertyNode::PropertyNode(Value *v) {
+    val = v;
 }
 
 bool PropertyNode::hasChild( const char *name ) {
-    if ( v->IsObject() ) {
-        if ( v->HasMember(name) ) {
+    if ( val->IsObject() ) {
+        if ( val->HasMember(name) ) {
             return true;
         }
     }
@@ -36,23 +91,23 @@ bool PropertyNode::hasChild( const char *name ) {
 }
 
 PropertyNode PropertyNode::getChild( const char *name, bool create ) {
-    if ( v->IsObject() ) {
-        if ( !v->HasMember(name) and create ) {
-            Value key(name, d.GetAllocator());
+    if ( val->IsObject() ) {
+        if ( !val->HasMember(name) and create ) {
+            GenericStringRef key(name);
             Value node;
             node.SetObject();
-            v->AddMember(key, node, d.GetAllocator());
+            val->AddMember(key, node, doc.GetAllocator());
         }
-        Value &child = (*v)[name];
-        return PropertyNode(&child);
+        Value *child = &(*val)[name];
+        return PropertyNode(child);
     }
     printf("%s not an object...\n", name);
     return PropertyNode();
 }
 
 int PropertyNode::getLen( const char *name) {
-    if ( v->IsObject() and v->IsArray() ) {
-        return v->Size();
+    if ( val->IsObject() and val->IsArray() ) {
+        return val->Size();
     } else {
         return 0;
     }
@@ -60,8 +115,8 @@ int PropertyNode::getLen( const char *name) {
 
 vector<string> PropertyNode::getChildren(bool expand) {
     vector<string> result;
-    if ( v->IsObject() ) {
-        for (Value::ConstMemberIterator itr = v->MemberBegin(); itr != v->MemberEnd(); ++itr) {
+    if ( val->IsObject() ) {
+        for (Value::ConstMemberIterator itr = val->MemberBegin(); itr != val->MemberEnd(); ++itr) {
             string name = itr->name.GetString();
             if ( expand and itr->value.IsArray() ) {
                 for ( int i = 0; i < itr->value.Size(); i++ ) {
@@ -192,9 +247,21 @@ static string getValueAsString( Value &v ) {
     } else if ( v.IsUint64() ) {
         return std::to_string(v.GetUint64());
     } else if ( v.IsFloat() ) {
+#if defined(ARDUINO_BUILD)
+        char buf[30];
+        hal.util->snprintf(buf, 30, "%f", v.GetFloat());
+        return buf;
+#else
         return std::to_string(v.GetFloat());
+#endif
     } else if ( v.IsDouble() ) {
+#if defined(ARDUINO_BUILD)
+        char buf[30];
+        hal.util->snprintf(buf, 30, "%lf", v.GetDouble());
+        return buf;
+#else
         return std::to_string(v.GetDouble());
+#endif
     } else if ( v.IsString() ) {
         return v.GetString();
     }
@@ -202,45 +269,49 @@ static string getValueAsString( Value &v ) {
 }
 
 bool PropertyNode::getBool( const char *name ) {
-    if ( v->IsObject() ) {
-        if ( v->HasMember(name) ) {
-            return getValueAsBool((*v)[name]);
+    if ( val->IsObject() ) {
+        if ( val->HasMember(name) ) {
+            return getValueAsBool((*val)[name]);
         }
     }
     return false;
 }
 
 int PropertyNode::getInt( const char *name ) {
-    if ( v->IsObject() ) {
-        if ( v->HasMember(name) ) {
-            return getValueAsInt((*v)[name]);
+    if ( val->IsObject() ) {
+        if ( val->HasMember(name) ) {
+            return getValueAsInt((*val)[name]);
         }
     }
     return 0;
 }
 
 float PropertyNode::getFloat( const char *name ) {
-    if ( v->IsObject() ) {
-        if ( v->HasMember(name) ) {
-            return getValueAsFloat((*v)[name]);
+    if ( val->IsObject() ) {
+        if ( val->HasMember(name) ) {
+            return getValueAsFloat((*val)[name]);
+        } else {
+            printf("no member in getFloat()\n");
         }
+    } else {
+        printf("v is not an object\n");
     }
     return 0.0;
 }
 
 double PropertyNode::getDouble( const char *name ) {
-    if ( v->IsObject() ) {
-        if ( v->HasMember(name) ) {
-            return getValueAsDouble((*v)[name]);
+    if ( val->IsObject() ) {
+        if ( val->HasMember(name) ) {
+            return getValueAsDouble((*val)[name]);
         }
     }
     return 0.0;
 }
 
 string PropertyNode::getString( const char *name ) {
-    if ( v->IsObject() ) {
-        if ( v->HasMember(name) ) {
-            return getValueAsString((*v)[name]);
+    if ( val->IsObject() ) {
+        if ( val->HasMember(name) ) {
+            return getValueAsString((*val)[name]);
         } else {
             return (string)name + ": not a member";
         }
@@ -248,63 +319,86 @@ string PropertyNode::getString( const char *name ) {
     return (string)name + ": not an object";
 }
 
-bool PropertyNode::setInt( const char *name, long val ) {
-    if ( !v->IsObject() ) {
-        v->SetObject();
+bool PropertyNode::setInt( const char *name, int n ) {
+    if ( !val->IsObject() ) {
+        val->SetObject();
     }
-    Value newval(val);
-    if ( !v->HasMember(name) ) {
+    Value newval(n);
+    if ( !val->HasMember(name) ) {
         printf("creating %s\n", name);
-        Value key(name, d.GetAllocator());
-        v->AddMember(key, newval, d.GetAllocator());
+        Value key(name, doc.GetAllocator());
+        val->AddMember(key, newval, doc.GetAllocator());
     } else {
-        printf("%s already exists\n");
+        printf("%s already exists\n", name);
     }
-    (*v)[name] = val;
+    (*val)[name] = n;
     return true;
 }
 
-bool PropertyNode::setDouble( const char *name, double val ) {
-    if ( !v->IsObject() ) {
-        v->SetObject();
+bool PropertyNode::setFloat( const char *name, float x ) {
+    //printf("setFloat(%s) = %f\n", name, val);
+    // hal.scheduler->delay(100);
+    if ( !val->IsObject() ) {
+        printf("  converting value to object\n");
+        // hal.scheduler->delay(100);
+        val->SetObject();
     }
-    Value newval(val);
-    if ( !v->HasMember(name) ) {
+    // printf("  creating newval\n");
+    // hal.scheduler->delay(100);
+    Value newval(x);
+    if ( !val->HasMember(name) ) {
         printf("creating %s\n", name);
-        Value key(name, d.GetAllocator());
-        v->AddMember(key, newval, d.GetAllocator());
+        Value key(name, doc.GetAllocator());
+        val->AddMember(key, newval, doc.GetAllocator());
     } else {
-        printf("%s already exists\n");
+        printf("%s already exists\n", name);
     }
-    (*v)[name] = val;
+    // hal.scheduler->delay(100);
+    (*val)[name] = x;
     return true;
 }
 
-bool PropertyNode::setString( const char *name, string val ) {
-    if ( !v->IsObject() ) {
-        v->SetObject();
+bool PropertyNode::setDouble( const char *name, double x ) {
+    if ( !val->IsObject() ) {
+        val->SetObject();
     }
-    if ( !v->HasMember(name) ) {
+    Value newval(x);
+    if ( !val->HasMember(name) ) {
+        printf("creating %s\n", name);
+        Value key(name, doc.GetAllocator());
+        val->AddMember(key, newval, doc.GetAllocator());
+    } else {
+        printf("%s already exists\n", name);
+    }
+    (*val)[name] = x;
+    return true;
+}
+
+bool PropertyNode::setString( const char *name, string s ) {
+    if ( !val->IsObject() ) {
+        val->SetObject();
+    }
+    if ( !val->HasMember(name) ) {
         Value newval("");
         printf("creating %s\n", name);
-        Value key(name, d.GetAllocator());
-        v->AddMember(key, newval, d.GetAllocator());
+        Value key(name, doc.GetAllocator());
+        val->AddMember(key, newval, doc.GetAllocator());
     } else {
-        printf("%s already exists\n");
+        printf("%s already exists\n", name);
     }
-    (*v)[name].SetString(val.c_str(), val.length());
+    (*val)[name].SetString(s.c_str(), s.length());
     return true;
 }
 
 void PropertyNode::pretty_print() {
     StringBuffer buffer;
     PrettyWriter<StringBuffer> writer(buffer);
-    v->Accept(writer);
+    val->Accept(writer);
     //const char* output = buffer.GetString();
     printf("%s\n", buffer.GetString());
 }
 
-Document d;
+Document doc;
 
 #if 0
 int main() {
@@ -318,9 +412,10 @@ int main() {
         input_buf += c;
     }
 
-    // d.Parse(input_buf.c_str());
+    // doc.Parse(input_buf.c_str());
 
-    PropertyNode n1 = PropertyNode("/a/b/c", true);
+    PropertyNode n1 = PropertyNode("/a/b/c/d", true);
+    PropertyNode n2 = PropertyNode("/a/b/c/d", true);
     n1.setInt("curt", 53);
     printf("%ld\n", n1.getInt("curt"));
     n1.setInt("curt", 55);
@@ -332,5 +427,6 @@ int main() {
     n1.setString("foo", "1.2345");
     printf("As double: %.2f\n", n1.getDouble("foo"));
     printf("As int: %d\n", n1.getInt("foo"));
+    PropertyNode("/").pretty_print();
 }
 #endif
