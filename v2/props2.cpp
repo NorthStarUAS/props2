@@ -16,12 +16,34 @@ using std::string;
 #include "strutils.h"
 #include "props2.h"
 
-void pretty_print_doc() {
+static void pretty_print_tree(Value *v) {
     StringBuffer buffer;
     PrettyWriter<StringBuffer> writer(buffer);
-    doc.Accept(writer);
+    v->Accept(writer);
     //const char* output = buffer.GetString();
     printf("%s\n", buffer.GetString());
+}
+
+static bool is_integer(const string val) {
+    for ( int i = 0; i < val.length(); i++ ) {
+        if ( val[i] < '0' or val[i] > '9' ) {
+            return false;
+        }
+    }
+    return true;
+}
+
+static bool extend_array(Value *node, int size) {
+    if ( !node->IsArray() ) {
+        node->SetArray();
+    }
+    for ( int i = node->Size(); i < size; i++ ) {
+        printf("    extemding: %d\n", i);
+        Value newobj(kObjectType);
+        node->PushBack(newobj, doc.GetAllocator());
+    }
+    pretty_print_tree(&doc);
+    return true;
 }
 
 PropertyNode::PropertyNode() {
@@ -54,6 +76,8 @@ PropertyNode::PropertyNode(string abs_path, bool create) {
     if ( !doc.IsObject() ) {
         doc.SetObject();
     }
+    printf("starting tree:\n");
+    pretty_print_tree(&doc);
     vector<string> tokens = split(abs_path, "/");
     Value *node = &doc;
     for ( int i = 0; i < tokens.size(); i++ ) {
@@ -61,18 +85,30 @@ PropertyNode::PropertyNode(string abs_path, bool create) {
             continue;
         }
         printf("  token: %s\n", tokens[i].c_str());
-        if ( !node->HasMember(tokens[i].c_str()) and create ) {
-            printf("    creating\n");
-            Value key(tokens[i].c_str(), doc.GetAllocator());
-            Value newobj(kObjectType);
-            newobj.SetObject();
-            // node->AddMember(key, newobj, doc.GetAllocator());
-            node->AddMember(GenericStringRef(tokens[i].c_str(), tokens[i].length()), newobj, doc.GetAllocator());
-            pretty_print_doc();
-        } else if ( !node->HasMember(tokens[i].c_str()) ) {
-            return;
+        if ( is_integer(tokens[i]) ) {
+            // array reference
+            int index = std::stoi(tokens[i].c_str());
+            extend_array(node, index+1);
+            printf("Array size: %d\n", node->Size());
+            node = &(*node)[index];
+        } else {
+            if ( node->HasMember(tokens[i].c_str()) ) {
+                printf("    has %s\n", tokens[i].c_str());
+                node = &(*node)[tokens[i].c_str()];
+                pretty_print_tree(node);
+            } else if ( create ) {
+                printf("    creating\n");
+                Value key;
+                key.SetString(tokens[i].c_str(), tokens[i].length(), doc.GetAllocator());
+                Value newobj(kObjectType);
+                node->AddMember(key, newobj, doc.GetAllocator());
+                pretty_print_tree(&doc);
+                node = &(*node)[tokens[i].c_str()];
+            } else {
+                val = nullptr;
+                return;
+            }
         }
-        node = &(*node)[tokens[i].c_str()];
     }
     val = node;
 }
@@ -93,7 +129,8 @@ bool PropertyNode::hasChild( const char *name ) {
 PropertyNode PropertyNode::getChild( const char *name, bool create ) {
     if ( val->IsObject() ) {
         if ( !val->HasMember(name) and create ) {
-            GenericStringRef key(name);
+            Value key;
+            key.SetString(name, doc.GetAllocator());
             Value node;
             node.SetObject();
             val->AddMember(key, node, doc.GetAllocator());
@@ -105,8 +142,10 @@ PropertyNode PropertyNode::getChild( const char *name, bool create ) {
     return PropertyNode();
 }
 
-int PropertyNode::getLen( const char *name) {
-    if ( val->IsObject() and val->IsArray() ) {
+int PropertyNode::getLen() {
+    printf("getLen()\n");
+    pretty_print();
+    if ( val->IsArray() ) {
         return val->Size();
     } else {
         return 0;
@@ -120,7 +159,7 @@ vector<string> PropertyNode::getChildren(bool expand) {
             string name = itr->name.GetString();
             if ( expand and itr->value.IsArray() ) {
                 for ( int i = 0; i < itr->value.Size(); i++ ) {
-                    string ename = name + "[" + std::to_string(i) + "]";
+                    string ename = name + "/" + std::to_string(i);
                     result.push_back(ename);
                 }
             } else {

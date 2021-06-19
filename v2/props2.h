@@ -39,9 +39,9 @@ public:
 
     bool isNull();		// return true if pObj pointer is NULL
     
-    int getLen( const char *name); // return len of pObj if a list, else 0
-    void setLen( const char *name, int size); // set len of name
-    void setLen( const char *name, int size, double init_val); // set len of name
+    int getLen(); // return len if node is an array (else 0)
+    void setLen(int size); // set array len of node, extend if necessary
+    void setLen(int size, double init_val); // set array size, extend and init
 
     vector<string> getChildren(bool expand=true); // return list of children
 
