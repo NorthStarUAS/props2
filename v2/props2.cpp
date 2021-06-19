@@ -67,19 +67,14 @@ PropertyNode::PropertyNode() {
 //     }
 // }
 
-PropertyNode::PropertyNode(string abs_path, bool create) {
-    printf("PropertyNode(%s)\n", abs_path.c_str());
-    if ( abs_path[0] != '/' ) {
-        printf("  not an absolute path\n");
-        return;
-    }
-    if ( !doc.IsObject() ) {
-        doc.SetObject();
+static Value *find_node_from_path(Value *node, string path, bool create) {
+    printf("PropertyNode(%s)\n", path.c_str());
+    if ( !node->IsObject() ) {
+        node->SetObject();
     }
     printf("starting tree:\n");
     pretty_print_tree(&doc);
-    vector<string> tokens = split(abs_path, "/");
-    Value *node = &doc;
+    vector<string> tokens = split(path, "/");
     for ( int i = 0; i < tokens.size(); i++ ) {
         if ( tokens[i].length() == 0 ) {
             continue;
@@ -105,12 +100,20 @@ PropertyNode::PropertyNode(string abs_path, bool create) {
                 pretty_print_tree(&doc);
                 node = &(*node)[tokens[i].c_str()];
             } else {
-                val = nullptr;
-                return;
+                return nullptr;
             }
         }
     }
-    val = node;
+    return node;
+}
+
+PropertyNode::PropertyNode(string abs_path, bool create) {
+    printf("PropertyNode(%s)\n", abs_path.c_str());
+    if ( abs_path[0] != '/' ) {
+        printf("  not an absolute path\n");
+        return;
+    }
+    val = find_node_from_path(&doc, abs_path, create);
 }
 
 PropertyNode::PropertyNode(Value *v) {
@@ -128,14 +131,7 @@ bool PropertyNode::hasChild( const char *name ) {
 
 PropertyNode PropertyNode::getChild( const char *name, bool create ) {
     if ( val->IsObject() ) {
-        if ( !val->HasMember(name) and create ) {
-            Value key;
-            key.SetString(name, doc.GetAllocator());
-            Value node;
-            node.SetObject();
-            val->AddMember(key, node, doc.GetAllocator());
-        }
-        Value *child = &(*val)[name];
+        Value *child = find_node_from_path(val, name, create);
         return PropertyNode(child);
     }
     printf("%s not an object...\n", name);
