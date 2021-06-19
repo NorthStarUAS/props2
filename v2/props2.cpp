@@ -104,6 +104,12 @@ static Value *find_node_from_path(Value *node, string path, bool create) {
             }
         }
     }
+    if ( node->IsArray() ) {
+        // when node is an array and no index specified, default to /0
+        if ( node->Size() > 0 ) {
+            node = &(*node)[0];
+        }
+    }
     return node;
 }
 
