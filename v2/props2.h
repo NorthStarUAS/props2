@@ -37,48 +37,56 @@ public:
 
     bool hasChild(const char *name );
     PropertyNode getChild( const char *name, bool create=true );
-    PropertyNode getChild( const char *name, int index, bool create=true );
+    // PropertyNode getChild( const char *name, unsigned int index, bool create=true );
 
     bool isNull();		// return true if pObj pointer is NULL
     
     int getLen( const char *name ); // return len if node is an array (else 0)
-    void setLen(int size); // set array len of node, extend if necessary
-    void setLen(int size, double init_val); // set array size, extend and init
+    // void setLen(int size); // set array len of node, extend if necessary
+    // void setLen(int size, double init_val); // set array size, extend and init
 
     vector<string> getChildren(bool expand=true); // return list of children
 
     bool isLeaf( const char *name); // return true if pObj/name is leaf
     
     // value getters
-    bool getBool( const char *name );	  // return value as a bool
-    int getInt( const char *name );	  // return value as an int
+    bool getBool( const char *name );         // return value as a bool
+    int getInt( const char *name );           // return value as an int
     unsigned int getUInt( const char *name ); // return value as an unsigned int
-    float getFloat( const char *name );   // return value as a float
-    double getDouble( const char *name ); // return value as a double
-    string getString( const char *name ); // return value as a string
+    int64_t getInt64( const char *name );     // return value as an int64_t
+    uint64_t getUInt64( const char *name );   // return value as an uint64_t
+    float getFloat( const char *name );       // return value as a float
+    double getDouble( const char *name );     // return value as a double
+    string getString( const char *name );     // return value as a string
 
     // indexed value getters
-    bool getBool( const char *name, int index ); // return value as a bool
-    int getInt( const char *name, int index ); // return value as an int
-    unsigned int getUInt( const char *name, int index ); // return value as an unsigned int
-    float getFloat( const char *name, int index ); // return value as a float
-    double getDouble( const char *name, int index ); // return value as a double
-    string getString( const char *name, int index ); // return value as a string
+    bool getBool( const char *name, unsigned int index ); // return value as a bool
+    int getInt( const char *name, unsigned int index ); // return value as an int
+    unsigned int getUInt( const char *name, unsigned int index ); // return value as an unsigned int
+    float getFloat( const char *name, unsigned int index ); // return value as a float
+    double getDouble( const char *name, unsigned int index ); // return value as a double
+    string getString( const char *name, unsigned int index ); // return value as a string
 
     // value setters
     bool setBool( const char *name, bool b ); // returns true if successful
     bool setInt( const char *name, int n );     // returns true if successful
     bool setUInt( const char *name, unsigned int u ); // returns true if successful
+    bool setInt64( const char *name, int64_t n );     // returns true if successful
+    bool setUInt64( const char *name, uint64_t u ); // returns true if successful
     bool setFloat( const char *name, float x ); // returns true if successful
     bool setDouble( const char *name, double x ); // returns true if successful
     bool setString( const char *name, string s ); // returns true if successful
 
     // indexed value setters
-    bool setFloat( const char *name, int index, float x ); // returns true if successful
+    bool setUInt( const char *name, unsigned int index, unsigned int u ); // returns true if successful
+    bool setFloat( const char *name, unsigned int index, float x ); // returns true if successful
 
     // load/merge json file under this node
     bool load( const char *file_path );
     
+    // save contents of node as a json file
+    bool save( const char *file_path );
+
     // void print();
     void pretty_print();
 
