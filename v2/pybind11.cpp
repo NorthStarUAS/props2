@@ -6,9 +6,17 @@ namespace py = pybind11;
 #include "props2.h"
 
 PYBIND11_MODULE(PropertyTree, m) {
+    py::class_<DocPointerWrapper>(m, "DocPointerWrapper")
+        ;
+    
     py::class_<PropertyNode>(m, "PropertyNode")
         .def(py::init<>())
+        .def(py::init<std::string>())
         .def(py::init<std::string, bool>())
+        
+        .def("get_Document", &PropertyNode::get_Document)
+        .def("set_Document", &PropertyNode::set_Document)
+        
         .def("hasChild", &PropertyNode::hasChild)
         .def("getChild", &PropertyNode::getChild)
         .def("isNull", &PropertyNode::isNull)
@@ -31,7 +39,7 @@ PYBIND11_MODULE(PropertyTree, m) {
         // .def("getUInt64", static_cast<uint64_t (PropertyNode::*)(const char *, unsigned int)>(&PropertyNode::getUInt64))
         .def("getFloat", static_cast<float (PropertyNode::*)(const char *, unsigned int)>(&PropertyNode::getFloat))
         // .def("getDouble", static_cast<double (PropertyNode::*)(const char *, unsigned int)>(&PropertyNode::getDouble))
-        // .def("getString", static_cast<string (PropertyNode::*)(const char *, unsigned int)>(&PropertyNode::getString))
+        .def("getString", static_cast<string (PropertyNode::*)(const char *, unsigned int)>(&PropertyNode::getString))
         
         .def("setBool", static_cast<bool (PropertyNode::*)(const char *, bool)>(&PropertyNode::setBool))
         .def("setInt", static_cast<bool (PropertyNode::*)(const char *, int)>(&PropertyNode::setInt))

@@ -9,7 +9,6 @@
 #  include <fcntl.h>            // open()
 #  include <unistd.h>           // read()
 #endif
-
 #if defined(__PX4_POSIX)
 #  include <px4_platform_common/posix.h>
 #endif
@@ -46,22 +45,23 @@ static bool is_integer(const string val) {
     return true;
 }
 
-static bool extend_array(Value *node, int size) {
+bool PropertyNode::extend_array(Value *node, int size) {
     if ( !node->IsArray() ) {
         node->SetArray();
     }
-    for ( int i = node->Size(); i <= size; i++ ) {
-        // printf("    extending: %d\n", i);
+    for ( int i = node->Size(); i < size; i++ ) {
+        printf("    extending: %d\n", i);
         Value newobj(kObjectType);
-        node->PushBack(newobj, doc.GetAllocator());
+        node->PushBack(newobj, doc->GetAllocator());
     }
     return true;
 }
 
 PropertyNode::PropertyNode() {
+    init_Document();
 }
 
-static Value *find_node_from_path(Value *start_node, string path, bool create) {
+Value *PropertyNode::find_node_from_path(Value *start_node, string path, bool create) {
     Value *node = start_node;
     printf("PropertyNode(%s)\n", path.c_str());
     if ( !node->IsObject() ) {
@@ -90,9 +90,9 @@ static Value *find_node_from_path(Value *start_node, string path, bool create) {
             } else if ( create ) {
                 printf("    creating %s\n", tokens[i].c_str());
                 Value key;
-                key.SetString(tokens[i].c_str(), tokens[i].length(), doc.GetAllocator());
+                key.SetString(tokens[i].c_str(), tokens[i].length(), doc->GetAllocator());
                 Value newobj(kObjectType);
-                node->AddMember(key, newobj, doc.GetAllocator());
+                node->AddMember(key, newobj, doc->GetAllocator());
                 node = &(*node)[tokens[i].c_str()];
                 // printf("  new node: %p\n", node);
             } else {
@@ -111,16 +111,18 @@ static Value *find_node_from_path(Value *start_node, string path, bool create) {
 }
 
 PropertyNode::PropertyNode(string abs_path, bool create) {
+    init_Document();
     // printf("PropertyNode(%s) %d\n", abs_path.c_str(), (int)&doc);
     if ( abs_path[0] != '/' ) {
         printf("  not an absolute path\n");
         return;
     }
-    val = find_node_from_path(&doc, abs_path, create);
+    val = find_node_from_path(doc, abs_path, create);
     // pretty_print();
 }
 
 PropertyNode::PropertyNode(Value *v) {
+    init_Document();
     val = v;
 }
 
@@ -439,7 +441,7 @@ float PropertyNode::getFloat( const char *name ) {
         //     printf("no member in getFloat(%s)\n", name);
         }
     } else {
-        printf("v is not an object\n");
+        printf("parent of %s is not an object\n", name);
     }
     return 0.0;
 }
@@ -508,6 +510,50 @@ float PropertyNode::getFloat( const char *name, unsigned int index ) {
     return 0.0;
 }
 
+double PropertyNode::getDouble( const char *name, unsigned int index ) {
+    if ( val->IsObject() ) {
+        if ( val->HasMember(name) ) {
+            Value &v = (*val)[name];
+            if ( v.IsArray() ) {
+                if ( index < v.Size() ) {
+                    return getValueAsDouble(v[index]);
+                } else {
+                    printf("index out of bounds: %s\n", name);
+                }
+            } else {
+                printf("not an array: %s\n", name);
+            }
+        } else {
+            // printf("no member in getDouble(%s, %d)\n", name, index);
+        }
+    } else {
+        printf("v is not an object\n");
+    }
+    return 0.0;
+}
+
+string PropertyNode::getString( const char *name, unsigned int index ) {
+    if ( val->IsObject() ) {
+        if ( val->HasMember(name) ) {
+            Value &v = (*val)[name];
+            if ( v.IsArray() ) {
+                if ( index < v.Size() ) {
+                    return getValueAsString(v[index]);
+                } else {
+                    printf("index out of bounds: %s\n", name);
+                }
+            } else {
+                printf("not an array: %s\n", name);
+            }
+        } else {
+            // printf("no member in getString(%s, %d)\n", name, index);
+        }
+    } else {
+        printf("v is not an object\n");
+    }
+    return "";
+}
+
 bool PropertyNode::setBool( const char *name, bool b ) {
     if ( !val->IsObject() ) {
         val->SetObject();
@@ -515,8 +561,8 @@ bool PropertyNode::setBool( const char *name, bool b ) {
     Value newval(b);
     if ( !val->HasMember(name) ) {
         // printf("creating %s\n", name);
-        Value key(name, doc.GetAllocator());
-        val->AddMember(key, newval, doc.GetAllocator());
+        Value key(name, doc->GetAllocator());
+        val->AddMember(key, newval, doc->GetAllocator());
     } else {
         // printf("%s already exists\n", name);
     }
@@ -531,8 +577,8 @@ bool PropertyNode::setInt( const char *name, int n ) {
     Value newval(n);
     if ( !val->HasMember(name) ) {
         // printf("creating %s\n", name);
-        Value key(name, doc.GetAllocator());
-        val->AddMember(key, newval, doc.GetAllocator());
+        Value key(name, doc->GetAllocator());
+        val->AddMember(key, newval, doc->GetAllocator());
     } else {
         // printf("%s already exists\n", name);
     }
@@ -547,8 +593,8 @@ bool PropertyNode::setUInt( const char *name, unsigned int u ) {
     Value newval(u);
     if ( !val->HasMember(name) ) {
         // printf("creating %s\n", name);
-        Value key(name, doc.GetAllocator());
-        val->AddMember(key, newval, doc.GetAllocator());
+        Value key(name, doc->GetAllocator());
+        val->AddMember(key, newval, doc->GetAllocator());
     } else {
         // printf("%s already exists\n", name);
     }
@@ -563,8 +609,8 @@ bool PropertyNode::setInt64( const char *name, int64_t n ) {
     Value newval(n);
     if ( !val->HasMember(name) ) {
         printf("creating %s\n", name);
-        Value key(name, doc.GetAllocator());
-        val->AddMember(key, newval, doc.GetAllocator());
+        Value key(name, doc->GetAllocator());
+        val->AddMember(key, newval, doc->GetAllocator());
     } else {
         // printf("%s already exists\n", name);
     }
@@ -579,8 +625,8 @@ bool PropertyNode::setUInt64( const char *name, uint64_t u ) {
     Value newval(u);
     if ( !val->HasMember(name) ) {
         // printf("creating %s\n", name);
-        Value key(name, doc.GetAllocator());
-        val->AddMember(key, newval, doc.GetAllocator());
+        Value key(name, doc->GetAllocator());
+        val->AddMember(key, newval, doc->GetAllocator());
     } else {
         // printf("%s already exists\n", name);
     }
@@ -596,8 +642,8 @@ bool PropertyNode::setFloat( const char *name, float x ) {
     Value newval(x);
     if ( !val->HasMember(name) ) {
         // printf("creating %s\n", name);
-        Value key(name, doc.GetAllocator());
-        val->AddMember(key, newval, doc.GetAllocator());
+        Value key(name, doc->GetAllocator());
+        val->AddMember(key, newval, doc->GetAllocator());
     } else {
         // printf("%s already exists\n", name);
     }
@@ -613,8 +659,8 @@ bool PropertyNode::setDouble( const char *name, double x ) {
     Value newval(x);
     if ( !val->HasMember(name) ) {
         // printf("creating %s\n", name);
-        Value key(name, doc.GetAllocator());
-        val->AddMember(key, newval, doc.GetAllocator());
+        Value key(name, doc->GetAllocator());
+        val->AddMember(key, newval, doc->GetAllocator());
     } else {
         // printf("%s already exists\n", name);
     }
@@ -629,12 +675,12 @@ bool PropertyNode::setString( const char *name, string s ) {
     if ( !val->HasMember(name) ) {
         Value newval("");
         // printf("creating %s\n", name);
-        Value key(name, doc.GetAllocator());
-        val->AddMember(key, newval, doc.GetAllocator());
+        Value key(name, doc->GetAllocator());
+        val->AddMember(key, newval, doc->GetAllocator());
     } else {
         // printf("%s already exists\n", name);
     }
-    (*val)[name].SetString(s.c_str(), s.length(), doc.GetAllocator());
+    (*val)[name].SetString(s.c_str(), s.length(), doc->GetAllocator());
     return true;
 }
 
@@ -646,9 +692,9 @@ bool PropertyNode::setUInt( const char *name, unsigned int index, unsigned int u
     }
     if ( !val->HasMember(name) ) {
         // printf("creating %s\n", name);
-        Value key(name, doc.GetAllocator());
+        Value key(name, doc->GetAllocator());
         Value a(kArrayType);
-        val->AddMember(key, a, doc.GetAllocator());
+        val->AddMember(key, a, doc->GetAllocator());
     } else {
         // printf("%s already exists\n", name);
         Value &a = (*val)[name];
@@ -671,9 +717,9 @@ bool PropertyNode::setFloat( const char *name, unsigned int index, float x ) {
     }
     if ( !val->HasMember(name) ) {
         // printf("creating %s\n", name);
-        Value key(name, doc.GetAllocator());
+        Value key(name, doc->GetAllocator());
         Value a(kArrayType);
-        val->AddMember(key, a, doc.GetAllocator());
+        val->AddMember(key, a, doc->GetAllocator());
     } else {
         // printf("%s already exists\n", name);
         Value &a = (*val)[name];
@@ -688,7 +734,7 @@ bool PropertyNode::setFloat( const char *name, unsigned int index, float x ) {
     return true;
 }
 
-static bool load_json( const char *file_path, Value *v ) {
+bool PropertyNode::load_json( const char *file_path, Value *v ) {
     printf("loading from %s\n", file_path);
     
     struct stat st;
@@ -735,8 +781,8 @@ static bool load_json( const char *file_path, Value *v ) {
     // printf("Read %d bytes.\nstring: %s\n", read_len, read_buf);
     // hal.scheduler->delay(100);
 
-    Document tmpdoc(&doc.GetAllocator());
-    tmpdoc.Parse(read_buf, read_len);
+    Document tmpdoc(&(doc->GetAllocator()));
+    tmpdoc.Parse<kParseCommentsFlag>(read_buf, read_len);
     if ( tmpdoc.HasParseError() ){
         printf("json parse err: %d (%s)\n",
                tmpdoc.GetParseError(),
@@ -748,9 +794,9 @@ static bool load_json( const char *file_path, Value *v ) {
     for (Value::ConstMemberIterator itr = tmpdoc.MemberBegin(); itr != tmpdoc.MemberEnd(); ++itr) {
         printf(" merging: %s\n", itr->name.GetString());
         Value key;
-        key.SetString(itr->name.GetString(), itr->name.GetStringLength(), doc.GetAllocator());
+        key.SetString(itr->name.GetString(), itr->name.GetStringLength(), doc->GetAllocator());
         Value &newval = tmpdoc[itr->name.GetString()];
-        v->AddMember(key, newval, doc.GetAllocator());
+        v->AddMember(key, newval, doc->GetAllocator());
     }
 
     return true;
@@ -890,17 +936,27 @@ static bool save_json( const char *file_path, Value *v ) {
 }
 
 // fixme: currently no mechanism to override include values
-static void recursively_expand_includes(Value *v) {
+void PropertyNode::recursively_expand_includes(string base_path, Value *v) {
     if ( v->IsObject() ) {
         if ( v->HasMember("include") and (*v)["include"].IsString() ) {
-            printf("Need to include: %s\n", (*v)["include"].GetString());
-            load_json( (*v)["include"].GetString(), v );
+            string full_path = base_path + "/" + (*v)["include"].GetString();
+            printf("Need to include: %s\n", full_path.c_str());
+            load_json( full_path.c_str(), v );
             v->RemoveMember("include");
         } else {
             for (Value::MemberIterator itr = v->MemberBegin(); itr != v->MemberEnd(); ++itr) {
-                if ( itr->value.IsObject() ) {
-                    recursively_expand_includes( &itr->value );
+                if ( itr->value.IsObject() or itr->value.IsArray() ) {
+                    printf("expanding: %s\n", itr->name.GetString());
+                    recursively_expand_includes(base_path, &itr->value );
                 }
+            }
+        }
+    } else if ( v->IsArray() ) {
+        printf("Is an array\n");
+        for (Value::ValueIterator itr = v->Begin(); itr != v->End(); ++itr) {
+            if ( itr->IsObject() or itr->IsArray() ) {
+                printf("recurse array\n");
+                recursively_expand_includes(base_path, itr );
             }
         }
     }
@@ -910,7 +966,13 @@ bool PropertyNode::load( const char *file_path ) {
     if ( !load_json(file_path, val) ) {
         return false;
     }
-    recursively_expand_includes(val);
+    string full_path = file_path;
+    size_t pos = full_path.rfind("/");
+    string base_path = "";
+    if ( pos > 0 and pos != string::npos ) {
+        base_path = full_path.substr(0, pos);
+    }
+    recursively_expand_includes(base_path, val);
     
     // printf("Updated node contents:\n");
     // pretty_print();
@@ -952,8 +1014,6 @@ void PropertyNode::pretty_print() {
     }
     printf("\n");
 }
-
-Document doc;
 
 #if 0
 int main() {

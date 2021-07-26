@@ -19,7 +19,10 @@ using namespace rapidjson;
 // property system style interface with a rapidjson document as the backend
 //
 
-extern Document doc;
+class DocPointerWrapper {
+public:
+    Document *doc;
+};
 
 class PropertyNode
 {
@@ -91,8 +94,30 @@ public:
     void pretty_print();
 
     Value *get_valptr() {  return val; }
+
+    DocPointerWrapper get_Document() {
+        init_Document();
+        DocPointerWrapper d;
+        d.doc = doc;
+        return d;
+    }
+    
+    void set_Document( DocPointerWrapper d ) {
+        doc = d.doc;
+    }
     
 private:
+    // shared instance
+    inline static Document *doc = nullptr;
+
     // Pointer p;
     Value *val = nullptr;
+
+    inline void init_Document() {
+        if ( doc == nullptr ) { doc = new Document; }
+    }
+    bool extend_array(Value *node, int size);
+    Value *find_node_from_path(Value *start_node, string path, bool create);
+    bool load_json( const char *file_path, Value *v );
+    void recursively_expand_includes(string base_path, Value *v);
 };
