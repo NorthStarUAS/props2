@@ -1,14 +1,18 @@
 # Quick install instructions
 
-    $ cd python
-    $ sudo python3 setup.py install
+## Install the python wrapper modules
 
-# To install C++ interface (required for rcUAS/rc-flight)
+I use the property tree to share program state between python and C++
+modules within the same hybrid app.  This majorly simplifies
+interfacing and data flow in a hybrid app.
 
-    $ cd library
-    $ ./autogen.sh
+    $ ./setup.py build
+    $ sudo ./setup.py install
+
+## Install the C++ library
+
     $ mkdir build
     $ cd build
-    $ ../configure CFLAGS="-Wall -O3" CXXFLAGS="-Wall -O3"
+    $ cmake ..
     $ make
     $ sudo make install
