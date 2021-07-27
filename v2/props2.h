@@ -44,14 +44,16 @@ public:
 
     bool isNull();		// return true if pObj pointer is NULL
     
+    
+    bool isParent(const char *name);
+    bool isArray(const char *name);
+    bool isValue(const char *name);
     int getLen( const char *name ); // return len if node is an array (else 0)
     // void setLen(int size); // set array len of node, extend if necessary
     // void setLen(int size, double init_val); // set array size, extend and init
 
     vector<string> getChildren(bool expand=true); // return list of children
 
-    bool isLeaf( const char *name); // return true if pObj/name is leaf
-    
     // value getters
     bool getBool( const char *name );         // return value as a bool
     int getInt( const char *name );           // return value as an int

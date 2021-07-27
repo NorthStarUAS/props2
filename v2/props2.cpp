@@ -148,6 +148,36 @@ bool PropertyNode::isNull() {
     return val == nullptr;
 }
 
+bool PropertyNode::isParent(const char *name) {
+    if ( val->IsObject() ) {
+        if ( val->HasMember(name) ) {
+            Value &v = (*val)[name];
+            return v.IsObject();
+        }
+    }
+    return false;
+}
+
+bool PropertyNode::isArray(const char *name) {
+    if ( val->IsObject() ) {
+        if ( val->HasMember(name) ) {
+            Value &v = (*val)[name];
+            return v.IsArray();
+        }
+    }
+    return false;
+}
+
+bool PropertyNode::isValue(const char *name) {
+    if ( val->IsObject() ) {
+        if ( val->HasMember(name) ) {
+            Value &v = (*val)[name];
+            return !v.IsObject() and !v.IsArray();
+        }
+    }
+    return false;
+}
+
 int PropertyNode::getLen( const char *name ) {
     if ( val->IsObject() ) {
         if ( val->HasMember(name) ) {
@@ -460,10 +490,10 @@ string PropertyNode::getString( const char *name ) {
         if ( val->HasMember(name) ) {
             return getValueAsString((*val)[name]);
         } else {
-            return (string)name + ": not a member";
+            return "";
         }
     }
-    return (string)name + ": not an object";
+    return "";
 }
 
 unsigned int PropertyNode::getUInt( const char *name, unsigned int index ) {

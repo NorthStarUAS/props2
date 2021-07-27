@@ -1,6 +1,7 @@
 #ifdef HAVE_PYBIND11
 
 #include <pybind11/pybind11.h>
+#include <pybind11/stl.h>
 namespace py = pybind11;
 
 #include "props2.h"
@@ -19,9 +20,15 @@ PYBIND11_MODULE(PropertyTree, m) {
         
         .def("hasChild", &PropertyNode::hasChild)
         .def("getChild", &PropertyNode::getChild)
+        
         .def("isNull", &PropertyNode::isNull)
+        .def("isParent", &PropertyNode::isParent)
+        .def("isArray", &PropertyNode::isArray)
+        .def("isValue", &PropertyNode::isValue)
+        
         .def("getLen", &PropertyNode::getLen)
         // .def("setLen", &PropertyNode::setLen)
+        .def("getChildren", &PropertyNode::getChildren)
         
         .def("getBool", static_cast<bool (PropertyNode::*)(const char *)>(&PropertyNode::getBool))
         .def("getInt", static_cast<int (PropertyNode::*)(const char *)>(&PropertyNode::getInt))
