@@ -37,7 +37,7 @@ managing the data flow.
     $ make
     $ sudo make install
     
-## Special hybrid (python + C++) application API note
+## Special hybrid (python and C++) application API note
 
 For sharing the PropertyTree between python-wrapped C++ modules that
 are imported into a python script and the main python interpreter,
@@ -53,7 +53,7 @@ In your main python script call:
 
 In your C++ (wrapped) module code include something like this
 (presumes the init() function will be wrapped/exported with pybind11
-or something similar:
+or something similar):
 
     #include <props2.h>
     void init(DocPointerWrapper d) {
@@ -142,32 +142,25 @@ easy to use, and keeps like data near each other.
 
 ### Example: writer module
 
-The gps driver module could include the following (python) code:
+The gps driver module could include the following (python) code to
+publish gps tstate to the shared property tree so other modules can
+quickly access this information:
 
-```
-from props import getNode, root
-gps = getNode("/sensors/gps", create=True)
-(lat, lon, alt, speed, ground_track) = read_gps()
-gps.lat = lat
-gps.lon = lon
-gps.alt = alt
-gps.speed = speed
-gps.ground_track = ground_track
-```
+    from PropertyTree import PropertyNode
+    (lat, lon, alt, speed, ground_track) = read_gps()
+    gps_node = PropertyNode("/sensors/gps")
+    gps_node.setDouble("latittude_deg", lat)
+    gps_node.setDouble("longitude_deg", lon)
+    gps_node.setFloat("altitude_m", alt)
+    gps_node.setFloat("speed_mps", speed)
+    gps_node.setFloat("ground_track_deg", ground_track)
 
 With this simple bit of code we have constructed our property tree,
 read the gps, and shared the values with the rest of our application.
 Done!
 
-The getNode() function will find the specified path in the property
-tree and return that node to you.  If you specify create=True, then
-getNode() will automatically create the node (and all the parents and
-grandparents of that node) if they don't already exist.  So in one
-line of code we have constructed the portion of the property tree that
-this module needs.
-
-A pyPropertyNode is really just an open ended python class, so we can
-then assign values to any attributes we wish to create.
+The PropretyNode() constructor will find the specified path in the property
+tree and return that node to you.
 
 ### Example: reader module
 
@@ -175,20 +168,19 @@ The navigation module needs the gps information from the property tree
 and do something with it.  The code starts out very similar, but watch
 what we can do:
 
-```
-from props import getNode, root
-gps = getNode("/sensors/gps", create=True)
-waypoint = getNode("/navigation/route/target", create=True)
-ap = getNode("/autopilot/settings", create=True)
-heading = great_circle_route([gps.lat, gps.lon], [waypoint.lat, waypoint.lon])
-ap.target_heading = heading
-```
+    from PropertyTree import PropertyNode
+    gps_node = PropertyNode("/sensors/gps")
+    wpt_node = PropertyNode("/navigation/route/target")
+    ap_node = PropertyNode("/autopilot/settings")
+    heading = great_circle_route([gps_node.getDouble("latitude_deg"), gps_node.getDouble("longitude_deg")],
+                                 [wpt_node.getDouble("latitude_deg"), wpt_node.getDouble("longitude_deg")])
+    ap_node.setFloat("target_heading_deg", heading)
 
-Did you see what happened there?  We first grabbed the shared gps
-node, but we also grabbed the shared target waypoint node, and we
-grabbed the autopilot settings node.  We quickly computed the heading
-from our current location to our target waypoint and we wrote that
-back into the autopilot configuration node.
+Did you see what happened there?  We first grabbed a pointer the
+shared gps node, then we grabbed the shared target waypoint node, and
+we grabbed the autopilot settings node.  We called a function to
+compute the heading from our current location to our target waypoint
+and we wrote that back into the autopilot configuration node.
 
 This approach to sharing data between program modules is a bit unique.
 But consider the alternatives: many applications grow their
