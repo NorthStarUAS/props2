@@ -149,7 +149,7 @@ quickly access this information:
     from PropertyTree import PropertyNode
     (lat, lon, alt, speed, ground_track) = read_gps()
     gps_node = PropertyNode("/sensors/gps")
-    gps_node.setDouble("latittude_deg", lat)
+    gps_node.setDouble("latitude_deg", lat)
     gps_node.setDouble("longitude_deg", lon)
     gps_node.setFloat("altitude_m", alt)
     gps_node.setFloat("speed_mps", speed)
@@ -206,18 +206,6 @@ any order.  The first module to initialize and request the specific
 property nodes will trigger their creation, and subsequent modules
 will find the nodes already there.
 
-### Direct access to properties (Python)
-
-The property tree is constructed out of a thin python shell class.
-Once the appropriate portions of the property tree are created and
-populated, python code can directly reference nodes and values.  For
-example, the following reference should work if the gps sensor tree
-has been created and populated:
-
-```
-lat = props.sensors.gps.lat
-```
-
 ### Sharing data between mixed C++ and Python applications
 
 A C++ interface to the python property tree is being developed in
@@ -225,7 +213,7 @@ parallel.  For now, know that it exists and brings to C++ most of the
 benefits of the property tree.  (And also enables data sharing between
 applications that are a mix of C++ and Python.)
 
-### Script features for C++
+### Script features for C++ (deprecated)
 
 For the C++ developer: incorporating the Property Tree into your
 application brings several conveniences of scripting languages to your
