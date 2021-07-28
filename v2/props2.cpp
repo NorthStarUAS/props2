@@ -343,8 +343,6 @@ static float getValueAsFloat( Value &v ) {
         return v.GetInt64();
     } else if ( v.IsUint64() ) {
         return v.GetUint64();
-    } else if ( v.IsFloat() ) {
-        return v.GetFloat();
     } else if ( v.IsDouble() ) {
         return v.GetDouble();
     } else if ( v.IsString() ) {
@@ -367,8 +365,6 @@ static double getValueAsDouble( Value &v ) {
         return v.GetInt64();
     } else if ( v.IsUint64() ) {
         return v.GetUint64();
-    } else if ( v.IsFloat() ) {
-        return v.GetFloat();
     } else if ( v.IsDouble() ) {
         return v.GetDouble();
     } else if ( v.IsString() ) {

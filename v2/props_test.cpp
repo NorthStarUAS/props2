@@ -1,7 +1,9 @@
-#include "props2.h"
+#include <stdio.h>
 
 #include <string>
 using std::string;
+
+#include "props2.h"
 
 int main(int argc, char **argv) {
     PropertyNode root_node = PropertyNode("/", true);
@@ -77,4 +79,12 @@ int main(int argc, char **argv) {
     }
 
     PropertyNode("/").pretty_print();
+ 
+    float f = -93.209907529612345;
+    root_node.setFloat("f", f);
+    printf("f = %.15f\n", root_node.getFloat("f"));
+    
+    double x = -93.209907529612345;
+    root_node.setDouble("x", x);
+    printf("x = %.15f\n", root_node.getDouble("x"));
 }
