@@ -1,40 +1,68 @@
-# rc-props
+# props2 - v2.0 of the shared PropertyTree/PropertyNode system.
 
-rc-props is a pure python "property tree" system for convenient
-organization and sharing of data between code modules.
+props2 is a "property tree" system for convenient organization and
+sharing of data between code modules and even for sharing data among
+hybrid python/C++ application modules.
 
-This package includes a C++ interface so that the property tree can
-also serve as a simple mechanism for sharing data between mixed Python
-and C++ modules (without needing to run the gauntlet of the very
-tricky python API.)
+This core functionality is written in C++ using rapidjson as the tree
+management backend.  A matching python interface is included (using
+pybind11) so that the property tree can also serve as a quick/simple
+mechanism for sharing data between hybrid Python and C++ applications.
 
 Traditionally code modules pass data through a rigid (and often
-brittle or clunky) API defined by each module.  The property tree
-establishes an organized tree of data that is shared and accessible by
-all modules in the application.  It assumes some basic cooperation and
-rule following between modules, but there are many very nice outcomes
-to this approach.
+brittle or clunky) API's that are define by each module.  The property
+tree establishes an organized tree of data that is shared and
+accessible by all modules in the application.  It assumes some basic
+cooperation and rule following between modules, but there are many
+very nice outcomes to this approach.
 
 ## Quick Installation Guide
 
-Please notice there is two parts to the install process (the python
-install and the C library install)
+Please notice there is two parts to the install process: the python
+install and the C library install.  (I use the property tree to share
+program state between python and C++ modules within the same hybrid
+app.  This simplifies dealing with module api's and interfacing and
+managing the data flow.
 
-### Part 1
+## Install the python module
 
-    $ cd python
-    $ sudo python3 ./setup.py install
+    $ ./setup.py build
+    $ sudo ./setup.py install
 
-### Part 2
+## Install the C++ library
 
-    $ cd ../library
-    $ ./autogen.sh
     $ mkdir build
     $ cd build
-    $ ../configure CFLAGS="-Wall -O3" CXXFLAGS="-Wall -O3"
+    $ cmake ..
     $ make
     $ sudo make install
+    
+## Special hybrid (python + C++) application API note
 
+For sharing the PropertyTree between python-wrapped C++ modules that
+are imported into a python script and the main python interpreter,
+there is a simple API setup to inform the C++ module of the shared
+proprty tree pointer:
+
+In your main python script call:
+
+    # Python script
+    from PropertyTree import PropertyNode
+    root = PropertyNode("/")
+    doc = root.get_Document()
+
+In your C++ (wrapped) module code include something like this
+(presumes the init() function will be wrapped/exported with pybind11
+or something similar:
+
+    #include <props2.h>
+    void init(DocPointerWrapper d) {
+        PropertyNode("/").set_Document(d);
+    }
+
+Once this step is complete, both python and C++ modules can freely
+create and access properties from the same shared tree to exchange
+program state.
 
 ## Background
 
