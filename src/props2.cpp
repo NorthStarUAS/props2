@@ -219,8 +219,6 @@ static bool getValueAsBool( Value &v ) {
         return v.GetInt64();
     } else if ( v.IsUint64() ) {
         return v.GetUint64();
-    } else if ( v.IsFloat() ) {
-      return fabsf(v.GetFloat()) < 0.0000001f;
     } else if ( v.IsDouble() ) {
 	return fabs(v.GetDouble()) < 0.0000001;
     } else if ( v.IsString() ) {
@@ -247,8 +245,6 @@ static int getValueAsInt( Value &v ) {
         return v.GetInt64();
     } else if ( v.IsUint64() ) {
         return v.GetUint64();
-    } else if ( v.IsFloat() ) {
-        return v.GetFloat();
     } else if ( v.IsDouble() ) {
         return v.GetDouble();
     } else if ( v.IsString() ) {
@@ -271,8 +267,6 @@ static unsigned int getValueAsUInt( Value &v ) {
         return v.GetInt64();
     } else if ( v.IsUint64() ) {
         return v.GetUint64();
-    } else if ( v.IsFloat() ) {
-        return v.GetFloat();
     } else if ( v.IsDouble() ) {
         return v.GetDouble();
     } else if ( v.IsString() ) {
@@ -295,8 +289,6 @@ static int64_t getValueAsInt64( Value &v ) {
         return v.GetInt64();
     } else if ( v.IsUint64() ) {
         return v.GetUint64();
-    } else if ( v.IsFloat() ) {
-        return v.GetFloat();
     } else if ( v.IsDouble() ) {
         return v.GetDouble();
     } else if ( v.IsString() ) {
@@ -319,8 +311,6 @@ static uint64_t getValueAsUInt64( Value &v ) {
         return v.GetInt64();
     } else if ( v.IsUint64() ) {
         return v.GetUint64();
-    } else if ( v.IsFloat() ) {
-        return v.GetFloat();
     } else if ( v.IsDouble() ) {
         return v.GetDouble();
     } else if ( v.IsString() ) {
@@ -391,14 +381,6 @@ static string getValueAsString( Value &v ) {
         return std::to_string(v.GetInt64());
     } else if ( v.IsUint64() ) {
         return std::to_string(v.GetUint64());
-    } else if ( v.IsFloat() ) {
-#if defined(ARDUPILOT_BUILD)
-        char buf[30];
-        hal.util->snprintf(buf, 30, "%f", v.GetFloat());
-        return buf;
-#else
-        return std::to_string(v.GetFloat());
-#endif
     } else if ( v.IsDouble() ) {
 #if defined(ARDUPILOT_BUILD)
         char buf[30];
@@ -459,19 +441,6 @@ uint64_t PropertyNode::getUInt64( const char *name ) {
     return 0;
 }
 
-float PropertyNode::getFloat( const char *name ) {
-    if ( val->IsObject() ) {
-        if ( val->HasMember(name) ) {
-            return getValueAsFloat((*val)[name]);
-        // } else {
-        //     printf("no member in getFloat(%s)\n", name);
-        }
-    } else {
-        printf("parent of %s is not an object\n", name);
-    }
-    return 0.0;
-}
-
 double PropertyNode::getDouble( const char *name ) {
     if ( val->IsObject() ) {
         if ( val->HasMember(name) ) {
@@ -506,34 +475,12 @@ unsigned int PropertyNode::getUInt( const char *name, unsigned int index ) {
                 printf("not an array: %s\n", name);
             }
         } else {
-            // printf("no member in getFloat(%s, %d)\n", name, index);
+            // printf("no member in getUInt(%s, %d)\n", name, index);
         }
     } else {
         printf("v is not an object\n");
     }
     return 0;
-}
-
-float PropertyNode::getFloat( const char *name, unsigned int index ) {
-    if ( val->IsObject() ) {
-        if ( val->HasMember(name) ) {
-            Value &v = (*val)[name];
-            if ( v.IsArray() ) {
-                if ( index < v.Size() ) {
-                    return getValueAsFloat(v[index]);
-                } else {
-                    printf("index out of bounds: %s\n", name);
-                }
-            } else {
-                printf("not an array: %s\n", name);
-            }
-        } else {
-            // printf("no member in getFloat(%s, %d)\n", name, index);
-        }
-    } else {
-        printf("v is not an object\n");
-    }
-    return 0.0;
 }
 
 double PropertyNode::getDouble( const char *name, unsigned int index ) {
@@ -660,24 +607,6 @@ bool PropertyNode::setUInt64( const char *name, uint64_t u ) {
     return true;
 }
 
-bool PropertyNode::setFloat( const char *name, float x ) {
-    if ( !val->IsObject() ) {
-        printf("  converting value to object\n");
-        val->SetObject();
-    }
-    Value newval(x);
-    if ( !val->HasMember(name) ) {
-        // printf("creating %s\n", name);
-        Value key(name, doc->GetAllocator());
-        val->AddMember(key, newval, doc->GetAllocator());
-    } else {
-        // printf("%s already exists\n", name);
-    }
-    (*val)[name] = x;
-    // hal.scheduler->delay(100);
-    return true;
-}
-
 bool PropertyNode::setDouble( const char *name, double x ) {
     if ( !val->IsObject() ) {
         val->SetObject();
@@ -710,7 +639,7 @@ bool PropertyNode::setString( const char *name, string s ) {
     return true;
 }
 
-bool PropertyNode::setUInt( const char *name, unsigned int index, unsigned int u ) {
+bool PropertyNode::setUInt( const char *name, unsigned int u, unsigned int index ) {
     if ( !val->IsObject() ) {
         printf("  converting value to object\n");
         // hal.scheduler->delay(100);
@@ -735,7 +664,7 @@ bool PropertyNode::setUInt( const char *name, unsigned int index, unsigned int u
     return true;
 }
 
-bool PropertyNode::setFloat( const char *name, unsigned int index, float x ) {
+bool PropertyNode::setDouble( const char *name, double x, unsigned int index ) {
     if ( !val->IsObject() ) {
         printf("  converting value to object\n");
         // hal.scheduler->delay(100);

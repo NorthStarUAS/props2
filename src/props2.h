@@ -63,7 +63,6 @@ public:
     unsigned int getUInt( const char *name ); // return value as an unsigned int
     int64_t getInt64( const char *name );     // return value as an int64_t
     uint64_t getUInt64( const char *name );   // return value as an uint64_t
-    float getFloat( const char *name );       // return value as a float
     double getDouble( const char *name );     // return value as a double
     string getString( const char *name );     // return value as a string
 
@@ -71,7 +70,6 @@ public:
     bool getBool( const char *name, unsigned int index ); // return value as a bool
     int getInt( const char *name, unsigned int index ); // return value as an int
     unsigned int getUInt( const char *name, unsigned int index ); // return value as an unsigned int
-    float getFloat( const char *name, unsigned int index ); // return value as a float
     double getDouble( const char *name, unsigned int index ); // return value as a double
     string getString( const char *name, unsigned int index ); // return value as a string
 
@@ -81,13 +79,12 @@ public:
     bool setUInt( const char *name, unsigned int u ); // returns true if successful
     bool setInt64( const char *name, int64_t n );     // returns true if successful
     bool setUInt64( const char *name, uint64_t u ); // returns true if successful
-    bool setFloat( const char *name, float x ); // returns true if successful
     bool setDouble( const char *name, double x ); // returns true if successful
     bool setString( const char *name, string s ); // returns true if successful
 
     // indexed value setters
     bool setUInt( const char *name, unsigned int index, unsigned int u ); // returns true if successful
-    bool setFloat( const char *name, unsigned int index, float x ); // returns true if successful
+    bool setDouble( const char *name, double x, unsigned int u ); // returns true if successful
 
     // load/merge json file under this node
     bool load( const char *file_path );
