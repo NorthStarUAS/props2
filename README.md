@@ -208,12 +208,12 @@ will find the nodes already there.
 
 ### Sharing data between mixed C++ and Python applications
 
-A C++ interface to the python property tree is being developed in
-parallel.  For now, know that it exists and brings to C++ most of the
-benefits of the property tree.  (And also enables data sharing between
-applications that are a mix of C++ and Python.)
+A duplicate python interface to the C++ property tree is provided (via
+pybind11).  This allows hybrid python/C++ apps to share data between
+modules without needing to worry about complex API calls, data flow,
+initialization order, etc.
 
-### Script features for C++ (deprecated)
+### Script features for C++
 
 For the C++ developer: incorporating the Property Tree into your
 application brings several conveniences of scripting languages to your
@@ -221,23 +221,14 @@ application.  One big convenience is automatic type conversion.  For
 example, an application can write a string value into a field of the
 property tree, but read it back out as a double.  Watch carefully:
 
-```
-#include "pyprops.hxx"
-int main(int argc, char **argv) {
-    // cleanup the python interpreter after all the main() and global
-    // destructors are called
-    atexit(pyPropsCleanup);
-    
-    pyPropsInit(argc, argv);
-
-    pyPropertyNode gps_node = pyGetNode("/sensors/gps");
-
-    gps_node.setString("lat", "-45.235");
-    double lat = gps_node.getDouble("lat");
-
-    return 0;
-}
-```
+    #include "props2.h"
+    int main(int argc, char **argv) {
+        PropertyNode gps_node("/sensors/gps");
+        // write the value as a string
+        gps_node.setString("lat", "-45.235");
+        // read the value back as a double
+        double lat = gps_node.getDouble("lat");
+    }
 
 Did you see how the value of "lat" is written as a string constant,
 but can be read back out as a double?  Often it is easy to keep your
@@ -274,14 +265,7 @@ property tree for the various modules to use as needed.
 
 ### A note on threaded applications
 
-The Property Tree system is *not* thread safe.  I am pondering some
-ideas to make a thread safe version of the property tree, but this
-will add restrictions to the api and overhead for resource locking.
-Hopefully I will add more on this later.
-
-For now, if you include threads in your application, know that either
-the property tree should be confined exclusively to one thread, or you
-will need to take extra precautions within your own application to
-ensure two threads do not try to read or write the property tree
-simultaneously.  Doing so could lead to random and difficult to debug
-program crashes.
+The Property Tree system is *not* thread safe.  If you wish to use
+this system in a threaded application, you will have to manage
+exclusive access to the property tree through your own higher level
+application mutual exclusion mechanisms.
