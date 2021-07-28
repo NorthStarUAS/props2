@@ -151,9 +151,9 @@ quickly access this information:
     gps_node = PropertyNode("/sensors/gps")
     gps_node.setDouble("latitude_deg", lat)
     gps_node.setDouble("longitude_deg", lon)
-    gps_node.setFloat("altitude_m", alt)
-    gps_node.setFloat("speed_mps", speed)
-    gps_node.setFloat("ground_track_deg", ground_track)
+    gps_node.setDouble("altitude_m", alt)
+    gps_node.setDouble("speed_mps", speed)
+    gps_node.setDouble("ground_track_deg", ground_track)
 
 With this simple bit of code we have constructed our property tree,
 read the gps, and shared the values with the rest of our application.
@@ -174,7 +174,7 @@ what we can do:
     ap_node = PropertyNode("/autopilot/settings")
     heading = great_circle_route([gps_node.getDouble("latitude_deg"), gps_node.getDouble("longitude_deg")],
                                  [wpt_node.getDouble("latitude_deg"), wpt_node.getDouble("longitude_deg")])
-    ap_node.setFloat("target_heading_deg", heading)
+    ap_node.setDouble("target_heading_deg", heading)
 
 Did you see what happened there?  We first grabbed a pointer the
 shared gps node, then we grabbed the shared target waypoint node, and
