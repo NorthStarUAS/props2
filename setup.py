@@ -8,14 +8,14 @@ setup(name="PropertyTree",
       author="Curtis L. Olson",
       author_email="curtolson@flightgear.org",
       url="https://github.com/RiceCreekUAS",
-      packages = ["v2"],
+      packages = ["src"],
       ext_modules=[
           Extension("PropertyTree",
                     define_macros=[("HAVE_PYBIND11", "1")],
-                    sources=["v2/props2.cpp",
-                             "v2/strutils.cpp",
-                             "v2/pybind11.cpp"],
-                    depends=["v2/props2.h",
-                             "v2/strutils.h"])
+                    sources=["src/props2.cpp",
+                             "src/strutils.cpp",
+                             "src/pybind11.cpp"],
+                    depends=["src/props2.h",
+                             "src/strutils.h"])
           ]
       )
