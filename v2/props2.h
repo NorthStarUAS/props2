@@ -39,7 +39,10 @@ public:
     // PropertyNode & operator= (const PropertyNode &node);
 
     bool hasChild(const char *name );
-    PropertyNode getChild( const char *name, bool create=true );
+    PropertyNode getChild( const char *name, bool create );
+    PropertyNode getChild( const char *name ) {
+        return getChild( name, true );
+    }
     // PropertyNode getChild( const char *name, unsigned int index, bool create=true );
 
     bool isNull();		// return true if pObj pointer is NULL

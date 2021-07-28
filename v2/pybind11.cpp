@@ -19,7 +19,8 @@ PYBIND11_MODULE(PropertyTree, m) {
         .def("set_Document", &PropertyNode::set_Document)
         
         .def("hasChild", &PropertyNode::hasChild)
-        .def("getChild", &PropertyNode::getChild)
+        .def("getChild", static_cast<PropertyNode (PropertyNode::*)(const char *)>(&PropertyNode::getChild))
+        .def("getChild", static_cast<PropertyNode (PropertyNode::*)(const char *, bool)>(&PropertyNode::getChild))
         
         .def("isNull", &PropertyNode::isNull)
         .def("isParent", &PropertyNode::isParent)
