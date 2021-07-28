@@ -221,8 +221,8 @@ application.  One big convenience is automatic type conversion.  For
 example, an application can write a string value into a field of the
 property tree, but read it back out as a double.  Watch carefully:
 
-    #include "props2.h"
-    int main(int argc, char **argv) {
+    #include <props2.h>
+    int main() {
         PropertyNode gps_node("/sensors/gps");
         // write the value as a string
         gps_node.setString("lat", "-45.235");
@@ -237,31 +237,56 @@ types for you as needed.
  
 ### Performance considerations
 
-Convenience comes at a cost.  The property tree has been designed in a
-way to leverage existing native python structures so it is relatively
-thin and fast, but within python scripts, saving a variable as a class
-member does have more overhead that a standalone variable.  Within
-C++, accessing property nodes and values requires a call layer into
-python structures.  Thus reading and writing properties does involve
-some additional overhead compared to using native variables.
+The property tree uses rapidjson as the backend for all dynamic tree
+management functionality.  This provides a nice balance between memory
+usage and performance.
 
-The best recommendation is to place all calls to `getNode()` within a
-modules initialization routine, cache the pointer that is returned,
-and then use this pointer exclusively in the module's update routines.
+Notice the the PropretyNode("/path") constructor and getChild("path")
+method both can traverse parts of the tree using string compares.  For
+this reason, it is recommended to do the name lookup in an init
+function and cache the result for later use in your update function,
+perhaps like this:
 
-This way the expensive getNode() function is only called during
-initialization, and the faster class.field notation (Python) or get()
-set() routines (C++) are called during run-time.
+    #include <props2.h>
+    class gps_reader {
+        PropertyNode gps_node;
+    public:
+        void init() {
+            gps_node = PropertyNode("/sensors/gps");
+        }
+        void update() {
+            gps_node.getDouble("latitude_deg");
+        }
+    };
+
+As with anything related to performance, the performance you see with
+your application running on your propcessor is the only benchmark that
+matters.  In many cases it is fine to do the name lookup each time
+through a loop if that simplifies your code and makes it more
+readable.
 
 ### Easy I/O for reading and writing configuration files
 
-The hierarchical structure of the property tree maps nicely to xml and
-json.  Currently there is an xml reader that loads an xml file and
-populates populates the values into a newly created property (sub)
-tree rooted at the requested location in the larger property tree.
-This is a great way to load a big application config file with a
+The hierarchical structure of the property tree (and the fact that
+it's built using rapidjson as the backened) means the property tree
+maps directly json.  Loading a json file into the property tree can be
+a great way to add config file support to your application with a
 single function call.  Then the config values are available in the
-property tree for the various modules to use as needed.
+property tree for the various modules to use as needed.  I often do
+something like this:
+
+    #include <props2.h>
+    main() {
+        PropertyNode config_node("/config");
+        config_node.load("config.json");
+    }
+
+Now your application configuration settings are available under the
+/config node in the property tree.
+
+Notice that key/value style configuration files can often simplify
+upgrading to new versions of your app or supporting older config
+variants.  Binary config files can be more brittle to deal with.
 
 ### A note on threaded applications
 
