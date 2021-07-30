@@ -24,36 +24,25 @@ public:
     Document *doc;
 };
 
-class PropertyNode
-{
+class PropertyNode {
+
 public:
     // Constructor.
     PropertyNode();
     PropertyNode(string abs_path, bool create=true);
     PropertyNode(Value *v);
 
-    // Destructor.
-    // ~PropertyNode();
-
-    // operator =
-    // PropertyNode & operator= (const PropertyNode &node);
-
     bool hasChild(const char *name );
     PropertyNode getChild( const char *name, bool create );
     PropertyNode getChild( const char *name ) {
         return getChild( name, true );
     }
-    // PropertyNode getChild( const char *name, unsigned int index, bool create=true );
 
     bool isNull();		// return true if value pointer is NULL
-    
-    
     bool isParent(const char *name);
     bool isArray(const char *name);
     bool isValue(const char *name);
     int getLen( const char *name ); // return len if node is an array (else 0)
-    // void setLen(int size); // set array len of node, extend if necessary
-    // void setLen(int size, double init_val); // set array size, extend and init
 
     vector<string> getChildren(bool expand=true); // return list of children
 
@@ -95,8 +84,6 @@ public:
     // void print();
     void pretty_print();
 
-    Value *get_valptr() {  return val; }
-
     DocPointerWrapper get_Document() {
         init_Document();
         DocPointerWrapper d;
@@ -109,10 +96,10 @@ public:
     }
     
 private:
-    // shared instance
+    // shared document instance
     inline static Document *doc = nullptr;
 
-    // Pointer p;
+    // pointer to rapidjson Object;
     Value *val = nullptr;
 
     inline void init_Document() {

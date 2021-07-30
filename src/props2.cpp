@@ -322,28 +322,6 @@ static uint64_t getValueAsUInt64( Value &v ) {
     return 0;
 }
 
-static float getValueAsFloat( Value &v ) {
-    if ( v.IsBool() ) {
-        return v.GetBool();
-    } else if ( v.IsInt() ) {
-        return v.GetInt();
-    } else if ( v.IsUint() ) {
-        return v.GetUint();
-    } else if ( v.IsInt64() ) {
-        return v.GetInt64();
-    } else if ( v.IsUint64() ) {
-        return v.GetUint64();
-    } else if ( v.IsDouble() ) {
-        return v.GetDouble();
-    } else if ( v.IsString() ) {
-        string s = v.GetString();
-        return std::stof(s);
-    } else {
-        printf("Unknown type in getValueAsFloat()\n");
-    }
-    return 0.0;
-}
-
 static double getValueAsDouble( Value &v ) {
     if ( v.IsBool() ) {
         return v.GetBool();
