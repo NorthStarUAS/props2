@@ -116,7 +116,9 @@ private:
     Value *val = nullptr;
 
     inline void init_Document() {
-        if ( doc == nullptr ) { doc = new Document; }
+        if ( doc == nullptr ) {
+            doc = new Document;
+        }
     }
     bool extend_array(Value *node, int size);
     Value *find_node_from_path(Value *start_node, string path, bool create);

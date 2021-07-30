@@ -50,7 +50,7 @@ bool PropertyNode::extend_array(Value *node, int size) {
         node->SetArray();
     }
     for ( int i = node->Size(); i < size; i++ ) {
-        printf("    extending: %d\n", i);
+        // printf("    extending: %d\n", i);
         Value newobj(kObjectType);
         node->PushBack(newobj, doc->GetAllocator());
     }
