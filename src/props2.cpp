@@ -25,16 +25,13 @@ using std::string;
 #include "rapidjson/stringbuffer.h"
 #include "rapidjson/prettywriter.h"
 
-#include "strutils.h"
-#include "props2.h"
+#if defined(ARDUPILOT_BUILD)
+#  include "util/strutils.h"
+#else
+#  include "strutils.h"
+#endif
 
-// static void pretty_print_tree(Value *v) {
-//     StringBuffer buffer;
-//     PrettyWriter<StringBuffer> writer(buffer);
-//     v->Accept(writer);
-//     //const char* output = buffer.GetString();
-//     printf("%s\n", buffer.GetString());
-// }
+#include "props2.h"
 
 static bool is_integer(const string val) {
     for ( unsigned int i = 0; i < val.length(); i++ ) {
@@ -948,6 +945,10 @@ void PropertyNode::pretty_print() {
     printf("\n");
 }
 
+#if defined(ARDUPILOT_BUILD)
+Document *PropertyNode::doc = nullptr;
+#endif
+ 
 #if 0
 int main() {
    // suck in all the input
