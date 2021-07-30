@@ -1,7 +1,7 @@
 #pragma once
 
 #if defined(ARDUPILOT_BUILD)
-#  undef _GLIBCXX_USE_C99_STDIO   // vsnprintf() not defind
+#  undef _GLIBCXX_USE_C99_STDIO   // vsnprintf() not defined
 #endif
 
 #include <stdio.h>
@@ -45,7 +45,7 @@ public:
     }
     // PropertyNode getChild( const char *name, unsigned int index, bool create=true );
 
-    bool isNull();		// return true if pObj pointer is NULL
+    bool isNull();		// return true if value pointer is NULL
     
     
     bool isParent(const char *name);
