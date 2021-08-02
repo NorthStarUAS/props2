@@ -97,11 +97,7 @@ public:
     
 private:
     // shared document instance
-#if defined(ARDUPILOT_BUILD)
     static Document *doc;
-#else
-    inline static Document *doc = nullptr;
-#endif
 
     // pointer to rapidjson Object;
     Value *val = nullptr;

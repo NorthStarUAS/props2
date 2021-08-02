@@ -945,9 +945,7 @@ void PropertyNode::pretty_print() {
     printf("\n");
 }
 
-#if defined(ARDUPILOT_BUILD)
 Document *PropertyNode::doc = nullptr;
-#endif
  
 #if 0
 int main() {
