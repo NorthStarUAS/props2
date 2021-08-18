@@ -930,8 +930,11 @@ bool PropertyNode::save( const char *file_path ) {
 void PropertyNode::pretty_print() {
     StringBuffer buffer;
     PrettyWriter<StringBuffer> writer(buffer);
-    val->Accept(writer);
+    //PrettyWriter<StringBuffer, UTF8<>, UTF8<>, CrtAllocator, kWriteNanAndInfFlag> writer(buffer);
+    //Writer<StringBuffer, UTF8<>, UTF8<>, CrtAllocator, kWriteNanAndInfFlag> writer(buffer);
+    bool error = val->Accept(writer);
     // work around size limitations
+    // printf("buffer length: %d\n", buffer.GetSize());
     const char *ptr = buffer.GetString();
     for ( unsigned int i = 0; i < buffer.GetSize(); i++ ) {
         printf("%c", ptr[i]);
@@ -943,6 +946,23 @@ void PropertyNode::pretty_print() {
 #endif
     }
     printf("\n");
+    if ( error ) {
+        printf("json formating errro (nan or inf?)\n");
+    }
+}
+
+string PropertyNode::write_as_string() {
+    StringBuffer buffer;
+    PrettyWriter<StringBuffer> writer(buffer);
+    val->Accept(writer);
+    // string result = "";
+    // const char *ptr = buffer.GetString();
+    // // printf("buffer length: %d\n", buffer.GetSize());
+    // for ( unsigned int i = 0; i < buffer.GetSize(); i++ ) {
+    //     result += ptr[i];
+    // }
+    // return result;
+    return buffer.GetString();
 }
 
 Document *PropertyNode::doc = nullptr;

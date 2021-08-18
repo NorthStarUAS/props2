@@ -66,6 +66,7 @@ PYBIND11_MODULE(PropertyTree, m) {
         .def("load", &PropertyNode::load)
         .def("save", &PropertyNode::save)
         .def("pretty_print", &PropertyNode::pretty_print)
+        .def("write_as_string", &PropertyNode::write_as_string)
     ;
 }
 

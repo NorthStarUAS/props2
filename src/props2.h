@@ -83,6 +83,7 @@ public:
 
     // void print();
     void pretty_print();
+    string write_as_string();
 
     DocPointerWrapper get_Document() {
         init_Document();
