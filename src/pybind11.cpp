@@ -25,8 +25,9 @@ PYBIND11_MODULE(PropertyTree, m) {
         .def("isNull", &PropertyNode::isNull)
         .def("isParent", &PropertyNode::isParent)
         .def("isArray", &PropertyNode::isArray)
-        .def("isValue", &PropertyNode::isValue)
-        
+        .def("isValue", static_cast<bool (PropertyNode::*)(const char *)>(&PropertyNode::isValue))
+        .def("isValue", static_cast<bool (PropertyNode::*)(const char *, unsigned int)>(&PropertyNode::isValue))
+
         .def("getLen", &PropertyNode::getLen)
         // .def("setLen", &PropertyNode::setLen)
         .def("getChildren", &PropertyNode::getChildren)

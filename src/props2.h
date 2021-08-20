@@ -42,6 +42,7 @@ public:
     bool isParent(const char *name);
     bool isArray(const char *name);
     bool isValue(const char *name);
+    bool isValue(const char *name, unsigned int index);
     int getLen( const char *name ); // return len if node is an array (else 0)
 
     vector<string> getChildren(bool expand=true); // return list of children

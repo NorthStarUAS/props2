@@ -175,6 +175,18 @@ bool PropertyNode::isValue(const char *name) {
     return false;
 }
 
+bool PropertyNode::isValue(const char *name, unsigned int index) {
+    if ( val->IsObject() ) {
+        if ( val->HasMember(name) ) {
+            Value &v = (*val)[name];
+            if ( v.IsArray() and index < v.Size() ) {
+                return !v[index].IsObject() and !v[index].IsArray();
+            }
+        }
+    }
+    return false;
+}
+
 int PropertyNode::getLen( const char *name ) {
     if ( val->IsObject() ) {
         if ( val->HasMember(name) ) {
