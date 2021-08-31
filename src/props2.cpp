@@ -60,7 +60,7 @@ PropertyNode::PropertyNode() {
 
 Value *PropertyNode::find_node_from_path(Value *start_node, string path, bool create) {
     Value *node = start_node;
-    printf("PropertyNode(%s)\n", path.c_str());
+    // printf("PropertyNode(%s)\n", path.c_str());
     if ( !node->IsObject() ) {
         node->SetObject();
         if ( !node->IsObject() ) {
