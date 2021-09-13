@@ -85,7 +85,8 @@ Value *PropertyNode::find_node_from_path(Value *start_node, string path, bool cr
                 // printf("    has %s\n", tokens[i].c_str());
                 node = &(*node)[tokens[i].c_str()];
             } else if ( create ) {
-                printf("    creating %s\n", tokens[i].c_str());
+                shared_realloc_counter++;
+                printf("    creating %s (%d)\n", tokens[i].c_str(), shared_realloc_counter);
                 Value key;
                 key.SetString(tokens[i].c_str(), tokens[i].length(), doc->GetAllocator());
                 Value newobj(kObjectType);
@@ -115,15 +116,29 @@ PropertyNode::PropertyNode(string abs_path, bool create) {
         return;
     }
     val = find_node_from_path(doc, abs_path, create);
+    saved_path = abs_path;
+    saved_realloc_counter = shared_realloc_counter;
     // pretty_print();
 }
 
-PropertyNode::PropertyNode(Value *v) {
-    init_Document();
-    val = v;
+//PropertyNode::PropertyNode(Value *v) {
+//    init_Document();
+//    val = v;
+//}
+
+void PropertyNode::realloc_check() {
+    if ( saved_realloc_counter != shared_realloc_counter ) {
+        printf("REALLOC HAPPENED, updating pointer to %s\n", saved_path.c_str());
+        printf(" saved %d  new %d\n", saved_realloc_counter, shared_realloc_counter);
+        Value *tmp = val;
+        val = find_node_from_path(doc, saved_path, true);
+        printf("  orig %p -> new %p\n", tmp, val);
+        saved_realloc_counter = shared_realloc_counter;
+    }
 }
 
 bool PropertyNode::hasChild( const char *name ) {
+    realloc_check();
     if ( val->IsObject() ) {
         if ( val->HasMember(name) ) {
             return true;
@@ -133,9 +148,13 @@ bool PropertyNode::hasChild( const char *name ) {
 }
 
 PropertyNode PropertyNode::getChild( const char *name, bool create ) {
+    realloc_check();
+    // printf("  get child of %s\n", saved_path.c_str());
+    string child_path = saved_path + "/" + name;
+    // printf("    new path: %s\n", child_path.c_str());
     if ( val->IsObject() ) {
-        Value *child = find_node_from_path(val, name, create);
-        return PropertyNode(child);
+        // Value *child = find_node_from_path(val, name, create);
+        return PropertyNode(child_path);
     }
     printf("%s not an object...\n", name);
     return PropertyNode();
@@ -146,6 +165,7 @@ bool PropertyNode::isNull() {
 }
 
 bool PropertyNode::isParent(const char *name) {
+    realloc_check();
     if ( val->IsObject() ) {
         if ( val->HasMember(name) ) {
             Value &v = (*val)[name];
@@ -156,6 +176,7 @@ bool PropertyNode::isParent(const char *name) {
 }
 
 bool PropertyNode::isArray(const char *name) {
+    realloc_check();
     if ( val->IsObject() ) {
         if ( val->HasMember(name) ) {
             Value &v = (*val)[name];
@@ -166,6 +187,7 @@ bool PropertyNode::isArray(const char *name) {
 }
 
 bool PropertyNode::isValue(const char *name) {
+    realloc_check();
     if ( val->IsObject() ) {
         if ( val->HasMember(name) ) {
             Value &v = (*val)[name];
@@ -176,6 +198,7 @@ bool PropertyNode::isValue(const char *name) {
 }
 
 bool PropertyNode::isValue(const char *name, unsigned int index) {
+    realloc_check();
     if ( val->IsObject() ) {
         if ( val->HasMember(name) ) {
             Value &v = (*val)[name];
@@ -188,6 +211,7 @@ bool PropertyNode::isValue(const char *name, unsigned int index) {
 }
 
 int PropertyNode::getLen( const char *name ) {
+    realloc_check();
     if ( val->IsObject() ) {
         if ( val->HasMember(name) ) {
             Value &v = (*val)[name];
@@ -200,6 +224,7 @@ int PropertyNode::getLen( const char *name ) {
 }
 
 vector<string> PropertyNode::getChildren(bool expand) {
+    realloc_check();
     vector<string> result;
     if ( val->IsObject() ) {
         for (Value::ConstMemberIterator itr = val->MemberBegin(); itr != val->MemberEnd(); ++itr) {
@@ -384,6 +409,7 @@ static string getValueAsString( Value &v ) {
 }
 
 bool PropertyNode::getBool( const char *name ) {
+    realloc_check();
     if ( val->IsObject() ) {
         if ( val->HasMember(name) ) {
             return getValueAsBool((*val)[name]);
@@ -393,6 +419,7 @@ bool PropertyNode::getBool( const char *name ) {
 }
 
 int PropertyNode::getInt( const char *name ) {
+    realloc_check();
     if ( val->IsObject() ) {
         if ( val->HasMember(name) ) {
             return getValueAsInt((*val)[name]);
@@ -402,6 +429,7 @@ int PropertyNode::getInt( const char *name ) {
 }
 
 unsigned int PropertyNode::getUInt( const char *name ) {
+    realloc_check();
     if ( val->IsObject() ) {
         if ( val->HasMember(name) ) {
             return getValueAsUInt((*val)[name]);
@@ -411,6 +439,7 @@ unsigned int PropertyNode::getUInt( const char *name ) {
 }
 
 int64_t PropertyNode::getInt64( const char *name ) {
+    realloc_check();
     if ( val->IsObject() ) {
         if ( val->HasMember(name) ) {
             return getValueAsInt64((*val)[name]);
@@ -420,6 +449,7 @@ int64_t PropertyNode::getInt64( const char *name ) {
 }
 
 uint64_t PropertyNode::getUInt64( const char *name ) {
+    realloc_check();
     if ( val->IsObject() ) {
         if ( val->HasMember(name) ) {
             return getValueAsUInt64((*val)[name]);
@@ -429,6 +459,7 @@ uint64_t PropertyNode::getUInt64( const char *name ) {
 }
 
 double PropertyNode::getDouble( const char *name ) {
+    realloc_check();
     if ( val->IsObject() ) {
         if ( val->HasMember(name) ) {
             return getValueAsDouble((*val)[name]);
@@ -438,6 +469,7 @@ double PropertyNode::getDouble( const char *name ) {
 }
 
 string PropertyNode::getString( const char *name ) {
+    realloc_check();
     if ( val->IsObject() ) {
         if ( val->HasMember(name) ) {
             return getValueAsString((*val)[name]);
@@ -449,6 +481,7 @@ string PropertyNode::getString( const char *name ) {
 }
 
 unsigned int PropertyNode::getUInt( const char *name, unsigned int index ) {
+    realloc_check();
     if ( val->IsObject() ) {
         if ( val->HasMember(name) ) {
             Value &v = (*val)[name];
@@ -471,6 +504,7 @@ unsigned int PropertyNode::getUInt( const char *name, unsigned int index ) {
 }
 
 double PropertyNode::getDouble( const char *name, unsigned int index ) {
+    realloc_check();
     if ( val->IsObject() ) {
         if ( val->HasMember(name) ) {
             Value &v = (*val)[name];
@@ -493,6 +527,7 @@ double PropertyNode::getDouble( const char *name, unsigned int index ) {
 }
 
 string PropertyNode::getString( const char *name, unsigned int index ) {
+    realloc_check();
     if ( val->IsObject() ) {
         if ( val->HasMember(name) ) {
             Value &v = (*val)[name];
@@ -515,6 +550,7 @@ string PropertyNode::getString( const char *name, unsigned int index ) {
 }
 
 bool PropertyNode::setBool( const char *name, bool b ) {
+    realloc_check();
     if ( !val->IsObject() ) {
         val->SetObject();
     }
@@ -531,6 +567,7 @@ bool PropertyNode::setBool( const char *name, bool b ) {
 }
 
 bool PropertyNode::setInt( const char *name, int n ) {
+    realloc_check();
     if ( !val->IsObject() ) {
         val->SetObject();
     }
@@ -547,6 +584,7 @@ bool PropertyNode::setInt( const char *name, int n ) {
 }
 
 bool PropertyNode::setUInt( const char *name, unsigned int u ) {
+    realloc_check();
     if ( !val->IsObject() ) {
         val->SetObject();
     }
@@ -563,6 +601,7 @@ bool PropertyNode::setUInt( const char *name, unsigned int u ) {
 }
 
 bool PropertyNode::setInt64( const char *name, int64_t n ) {
+    realloc_check();
     if ( !val->IsObject() ) {
         val->SetObject();
     }
@@ -579,6 +618,7 @@ bool PropertyNode::setInt64( const char *name, int64_t n ) {
 }
 
 bool PropertyNode::setUInt64( const char *name, uint64_t u ) {
+    realloc_check();
     if ( !val->IsObject() ) {
         val->SetObject();
     }
@@ -595,6 +635,7 @@ bool PropertyNode::setUInt64( const char *name, uint64_t u ) {
 }
 
 bool PropertyNode::setDouble( const char *name, double x ) {
+    realloc_check();
     if ( !val->IsObject() ) {
         val->SetObject();
     }
@@ -611,6 +652,7 @@ bool PropertyNode::setDouble( const char *name, double x ) {
 }
 
 bool PropertyNode::setString( const char *name, string s ) {
+    realloc_check();
     if ( !val->IsObject() ) {
         val->SetObject();
     }
@@ -627,6 +669,7 @@ bool PropertyNode::setString( const char *name, string s ) {
 }
 
 bool PropertyNode::setUInt( const char *name, unsigned int u, unsigned int index ) {
+    realloc_check();
     if ( !val->IsObject() ) {
         printf("  converting value to object\n");
         // hal.scheduler->delay(100);
@@ -652,6 +695,7 @@ bool PropertyNode::setUInt( const char *name, unsigned int u, unsigned int index
 }
 
 bool PropertyNode::setDouble( const char *name, double x, unsigned int index ) {
+    realloc_check();
     if ( !val->IsObject() ) {
         printf("  converting value to object\n");
         // hal.scheduler->delay(100);
@@ -676,7 +720,34 @@ bool PropertyNode::setDouble( const char *name, double x, unsigned int index ) {
     return true;
 }
 
+bool PropertyNode::setString( const char *name, string s, unsigned int index ) {
+    realloc_check();
+    if ( !val->IsObject() ) {
+        printf("  converting value to object\n");
+        // hal.scheduler->delay(100);
+        val->SetObject();
+    }
+    if ( !val->HasMember(name) ) {
+        // printf("creating %s\n", name);
+        Value key(name, doc->GetAllocator());
+        Value a(kArrayType);
+        val->AddMember(key, a, doc->GetAllocator());
+    } else {
+        // printf("%s already exists\n", name);
+        Value &a = (*val)[name];
+        if ( ! a.IsArray() ) {
+            printf("converting member to array: %s\n", name);
+            a.SetArray();
+        }
+    }
+    Value &a = (*val)[name];
+    extend_array(&a, index+1);    // protect against out of range
+    a[index].SetString(s.c_str(), s.length(), doc->GetAllocator());
+    return true;
+}
+
 bool PropertyNode::load_json( const char *file_path, Value *v ) {
+    realloc_check();
     printf("loading from %s\n", file_path);
     
     struct stat st;
@@ -879,6 +950,7 @@ static bool save_json( const char *file_path, Value *v ) {
 
 // fixme: currently no mechanism to override include values
 void PropertyNode::recursively_expand_includes(string base_path, Value *v) {
+    realloc_check();
     if ( v->IsObject() ) {
         if ( v->HasMember("include") and (*v)["include"].IsString() ) {
             string full_path = base_path + "/" + (*v)["include"].GetString();
@@ -905,6 +977,7 @@ void PropertyNode::recursively_expand_includes(string base_path, Value *v) {
 }
 
 bool PropertyNode::load( const char *file_path ) {
+    realloc_check();
     if ( !load_json(file_path, val) ) {
         return false;
     }
@@ -924,6 +997,7 @@ bool PropertyNode::load( const char *file_path ) {
 }
 
 bool PropertyNode::save( const char *file_path ) {
+    realloc_check();
     if ( !save_json(file_path, val) ) {
         return false;
     }
@@ -940,6 +1014,7 @@ bool PropertyNode::save( const char *file_path ) {
 // }
 
 void PropertyNode::pretty_print() {
+    realloc_check();
     StringBuffer buffer;
     PrettyWriter<StringBuffer> writer(buffer);
     //PrettyWriter<StringBuffer, UTF8<>, UTF8<>, CrtAllocator, kWriteNanAndInfFlag> writer(buffer);
@@ -963,7 +1038,8 @@ void PropertyNode::pretty_print() {
     }
 }
 
-string PropertyNode::write_as_string() {
+string PropertyNode::get_json_string() {
+    realloc_check();
     StringBuffer buffer;
     PrettyWriter<StringBuffer> writer(buffer);
     val->Accept(writer);
@@ -977,7 +1053,34 @@ string PropertyNode::write_as_string() {
     return buffer.GetString();
 }
 
+bool PropertyNode::set_json_string( string message ) {
+    Document tmpdoc(&(doc->GetAllocator()));
+    tmpdoc.Parse<kParseCommentsFlag>(message.c_str(), message.length());
+    if ( tmpdoc.HasParseError() ){
+        printf("json parse err: %d (%s)\n",
+               tmpdoc.GetParseError(),
+               GetParseError_En(tmpdoc.GetParseError()));
+        return false;
+    }
+
+    // merge each new top level member individually
+    for (Value::ConstMemberIterator itr = tmpdoc.MemberBegin(); itr != tmpdoc.MemberEnd(); ++itr) {
+        printf(" merging: %s\n", itr->name.GetString());
+        Value key;
+        key.SetString(itr->name.GetString(), itr->name.GetStringLength(), doc->GetAllocator());
+        Value &newval = tmpdoc[itr->name.GetString()];
+        if ( val->HasMember(key) ) {
+            (*val)[itr->name.GetString()] = newval;
+        } else {
+            val->AddMember(key, newval, doc->GetAllocator());
+        }
+    }
+
+    return true;
+}
+
 Document *PropertyNode::doc = nullptr;
+int PropertyNode::shared_realloc_counter = 0;
  
 #if 0
 int main() {

@@ -62,12 +62,13 @@ PYBIND11_MODULE(PropertyTree, m) {
         // .def("setInt64", static_cast<bool (PropertyNode::*)(const char *, unsigned int)>(&PropertyNode::setInt64))
         // .def("setUInt64", static_cast<bool (PropertyNode::*)(const char *, unsigned int)>(&PropertyNode::setUInt64))
         .def("setDouble", static_cast<bool (PropertyNode::*)(const char *, double, unsigned int)>(&PropertyNode::setDouble))
-        // .def("setString", static_cast<bool (PropertyNode::*)(const char *, unsigned int)>(&PropertyNode::setString))
+        .def("setString", static_cast<bool (PropertyNode::*)(const char *, string, unsigned int)>(&PropertyNode::setString))
 
         .def("load", &PropertyNode::load)
         .def("save", &PropertyNode::save)
         .def("pretty_print", &PropertyNode::pretty_print)
-        .def("write_as_string", &PropertyNode::write_as_string)
+        .def("get_json_string", &PropertyNode::get_json_string)
+        .def("set_json_string", &PropertyNode::set_json_string)
     ;
 }
 
