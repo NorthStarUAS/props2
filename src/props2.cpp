@@ -128,11 +128,11 @@ PropertyNode::PropertyNode(string abs_path, bool create) {
 
 void PropertyNode::realloc_check() {
     if ( saved_realloc_counter != shared_realloc_counter ) {
-        printf("REALLOC HAPPENED, updating pointer to %s\n", saved_path.c_str());
-        printf(" saved %d  new %d\n", saved_realloc_counter, shared_realloc_counter);
-        Value *tmp = val;
+        // printf("REALLOC HAPPENED, updating pointer to %s\n", saved_path.c_str());
+        // printf(" saved %d  new %d\n", saved_realloc_counter, shared_realloc_counter);
+        // Value *tmp = val;
         val = find_node_from_path(doc, saved_path, true);
-        printf("  orig %p -> new %p\n", tmp, val);
+        // printf("  orig %p -> new %p\n", tmp, val);
         saved_realloc_counter = shared_realloc_counter;
     }
 }
