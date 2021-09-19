@@ -55,7 +55,7 @@ bool PropertyNode::extend_array(Value *node, int size) {
 }
 
 PropertyNode::PropertyNode() {
-    init_Document();
+    init_shared_state();
 }
 
 Value *PropertyNode::find_node_from_path(Value *start_node, string path, bool create) {
@@ -85,8 +85,8 @@ Value *PropertyNode::find_node_from_path(Value *start_node, string path, bool cr
                 // printf("    has %s\n", tokens[i].c_str());
                 node = &(*node)[tokens[i].c_str()];
             } else if ( create ) {
-                shared_realloc_counter++;
-                printf("    creating %s (%d)\n", tokens[i].c_str(), shared_realloc_counter);
+                (*realloc_counter)++;
+                printf("    creating %s (%d)\n", tokens[i].c_str(), *realloc_counter);
                 Value key;
                 key.SetString(tokens[i].c_str(), tokens[i].length(), doc->GetAllocator());
                 Value newobj(kObjectType);
@@ -109,7 +109,7 @@ Value *PropertyNode::find_node_from_path(Value *start_node, string path, bool cr
 }
 
 PropertyNode::PropertyNode(string abs_path, bool create) {
-    init_Document();
+    init_shared_state();
     // printf("PropertyNode(%s) %d\n", abs_path.c_str(), (int)&doc);
     if ( abs_path[0] != '/' ) {
         printf("  not an absolute path\n");
@@ -117,23 +117,23 @@ PropertyNode::PropertyNode(string abs_path, bool create) {
     }
     val = find_node_from_path(doc, abs_path, create);
     saved_path = abs_path;
-    saved_realloc_counter = shared_realloc_counter;
+    saved_realloc_counter = *realloc_counter;
     // pretty_print();
 }
 
 //PropertyNode::PropertyNode(Value *v) {
-//    init_Document();
+//    init_shared_state();
 //    val = v;
 //}
 
 void PropertyNode::realloc_check() {
-    if ( saved_realloc_counter != shared_realloc_counter ) {
+    if ( saved_realloc_counter != *realloc_counter ) {
         // printf("REALLOC HAPPENED, updating pointer to %s\n", saved_path.c_str());
-        // printf(" saved %d  new %d\n", saved_realloc_counter, shared_realloc_counter);
+        // printf(" saved %d  new %d\n", saved_realloc_counter, *realloc_counter);
         // Value *tmp = val;
         val = find_node_from_path(doc, saved_path, true);
         // printf("  orig %p -> new %p\n", tmp, val);
-        saved_realloc_counter = shared_realloc_counter;
+        saved_realloc_counter = *realloc_counter;
     }
 }
 
@@ -1080,7 +1080,7 @@ bool PropertyNode::set_json_string( string message ) {
 }
 
 Document *PropertyNode::doc = nullptr;
-int PropertyNode::shared_realloc_counter = 0;
+int *PropertyNode::realloc_counter = nullptr;
  
 #if 0
 int main() {
