@@ -7,7 +7,7 @@ namespace py = pybind11;
 #include "props2.h"
 
 PYBIND11_MODULE(PropertyTree, m) {
-    py::class_<DocPointerWrapper>(m, "DocPointerWrapper")
+    py::class_<SharedStateWrapper>(m, "SharedStateWrapper")
         ;
     
     py::class_<PropertyNode>(m, "PropertyNode")
@@ -15,8 +15,8 @@ PYBIND11_MODULE(PropertyTree, m) {
         .def(py::init<std::string>())
         .def(py::init<std::string, bool>())
         
-        .def("get_Document", &PropertyNode::get_Document)
-        .def("set_Document", &PropertyNode::set_Document)
+        .def("get_shared_state", &PropertyNode::get_shared_state)
+        .def("set_shared_state", &PropertyNode::set_shared_state)
         
         .def("hasChild", &PropertyNode::hasChild)
         .def("getChild", static_cast<PropertyNode (PropertyNode::*)(const char *)>(&PropertyNode::getChild))
