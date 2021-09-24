@@ -118,6 +118,7 @@ private:
         }
         if ( realloc_counter == nullptr ) {
             realloc_counter = new int;
+            *realloc_counter = 0;
         }
     }
     bool extend_array(Value *node, int size);
