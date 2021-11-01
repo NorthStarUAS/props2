@@ -1,4 +1,4 @@
-# props2 - Property tree system version 2
+# props2 - PropertyTree version 2
 
 **Structured shared in-memory data repository.**
 
