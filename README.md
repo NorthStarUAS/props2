@@ -1,6 +1,6 @@
-# props2 - PropertyTree/ProprtyNode system version 2
+# props2 - PropertyTree/PropertyNode system version 2
 
-Structured shared in-memory data repository.
+**Structured shared in-memory data repository.**
 
 props2 is a "property tree" system for convenient organization and
 sharing of data between code modules and even for sharing data among
