@@ -38,7 +38,15 @@ managing the data flow.
     $ cmake ..
     $ make
     $ sudo make install
-    
+
+## Install the C++ library with MinGW/cmake on windows
+
+    $ mkdir build
+    $ cd build
+    $ cmake .. -G "MinGW Makefiles"
+    $ make
+    $ make DESTDIR=~/mingw64 install
+
 ## Special hybrid (python and C++) application API note
 
 For sharing the PropertyTree between python-wrapped C++ modules that
