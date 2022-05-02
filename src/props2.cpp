@@ -2,6 +2,11 @@
 #  include <AP_Filesystem/AP_Filesystem.h>
 #  undef _GLIBCXX_USE_C99_STDIO   // vsnprintf() not defined
 #  include "setup_board.h"
+#elif defined(WIN32)
+#  include <sys/stat.h>
+#  include <sys/types.h>
+#  include <fcntl.h>            // open()
+#  include <unistd.h>           // read()
 #else
 #  include <sys/stat.h>
 #  include <sys/statfs.h>
@@ -895,6 +900,9 @@ static bool save_json( const char *file_path, Value *v ) {
     // check disk space
 #if defined(ARDUPILOT_BUILD)
     uint64_t free_bytes = AP::FS().disk_free("/");
+#elif defined(WIN32)
+    // don't check, assume unlimited space on a windows PC
+    uint64_t free_bytes = 9999999;
 #else
     struct statfs statfs_buf;
     uint64_t free_bytes;
@@ -1034,7 +1042,7 @@ void PropertyNode::pretty_print() {
     }
     printf("\n");
     if ( error ) {
-        printf("json formating errro (nan or inf?)\n");
+        printf("json formating error (nan or inf?)\n");
     }
 }
 

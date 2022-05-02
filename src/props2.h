@@ -101,7 +101,7 @@ public:
         doc = d.doc;
         realloc_counter = d.realloc_counter;
     }
-    
+
 private:
     // shared state instances
     static Document *doc;
