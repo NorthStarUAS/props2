@@ -28,24 +28,24 @@ managing the data flow.
 
 ## Install the python module
 
-    $ ./setup.py build
-    $ sudo ./setup.py install
+    ./setup.py build
+    sudo ./setup.py install
 
 ## Install the C++ library
 
-    $ mkdir build
-    $ cd build
-    $ cmake ..
-    $ make
-    $ sudo make install
+    mkdir build
+    cd build
+    cmake ..
+    make
+    sudo make install
 
 ## Install the C++ library with MinGW/cmake on windows
 
-    $ mkdir build
-    $ cd build
-    $ cmake .. -G "MinGW Makefiles"
-    $ make
-    $ make DESTDIR=~/mingw64 install
+    mkdir build
+    cd build
+    cmake .. -G "MinGW Makefiles"
+    make
+    make DESTDIR=~/mingw64 install
 
 ## Special hybrid (python and C++) application API note
 
@@ -120,7 +120,7 @@ but in the right context it is super awesome.
   application.  (I.e. when your app needs global data shared, don't
   hack it and hide it, embrace it with a real structure that avoids
   the bad side of global variables.)
-  
+
 * It provides a way to organize the important data structures within
   your application (the property tree.)
 
@@ -244,7 +244,7 @@ Did you see how the value of "lat" is written as a string constant,
 but can be read back out as a double?  Often it is easy to keep your
 types consistent, but it's nice to just let the back end system convert
 types for you as needed.
- 
+
 ### Performance considerations
 
 The property tree uses rapidjson as the backend for all dynamic tree
