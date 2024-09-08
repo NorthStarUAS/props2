@@ -1,21 +1,12 @@
-#if defined(ARDUPILOT_BUILD)
-#  include <AP_Filesystem/AP_Filesystem.h>
-#  undef _GLIBCXX_USE_C99_STDIO   // vsnprintf() not defined
-#  include "setup_board.h"
-#elif defined(WIN32)
-#  include <sys/stat.h>
-#  include <sys/types.h>
-#  include <fcntl.h>            // open()
-#  include <unistd.h>           // read()
+#if defined(ARDUINO)
+#  include <SD.h>
+   extern FS *configfs;  // SD or LittleFS_Program (or other) defined in the top level sketch
 #else
 #  include <sys/stat.h>
 #  include <sys/statfs.h>
 #  include <sys/types.h>
 #  include <fcntl.h>            // open()
 #  include <unistd.h>           // read()
-#endif
-#if defined(__PX4_POSIX)
-#  include <px4_platform_common/posix.h>
 #endif
 
 #include <math.h>
@@ -29,12 +20,7 @@ using std::string;
 #include "rapidjson/error/en.h"
 #include "rapidjson/stringbuffer.h"
 #include "rapidjson/prettywriter.h"
-
-#if defined(ARDUPILOT_BUILD)
-#  include "util/strutils.h"
-#else
-#  include "strutils.h"
-#endif
+#include "util/strutils.h"
 
 #include "props2.h"
 
@@ -70,7 +56,7 @@ Value *PropertyNode::find_node_from_path(Value *start_node, string path, bool cr
         node->SetObject();
         if ( !node->IsObject() ) {
             printf("  still not object after setting to object.\n");
-        }              
+        }
     }
     vector<string> tokens = split(path, "/");
     for ( unsigned int i = 0; i < tokens.size(); i++ ) {
@@ -399,13 +385,7 @@ static string getValueAsString( Value &v ) {
     } else if ( v.IsUint64() ) {
         return std::to_string(v.GetUint64());
     } else if ( v.IsDouble() ) {
-#if defined(ARDUPILOT_BUILD)
-        char buf[30];
-        hal.util->snprintf(buf, 30, "%lf", v.GetDouble());
-        return buf;
-#else
         return std::to_string(v.GetDouble());
-#endif
     } else if ( v.IsString() ) {
         return v.GetString();
     }
@@ -754,44 +734,61 @@ bool PropertyNode::setString( const char *name, string s, unsigned int index ) {
 bool PropertyNode::load_json( const char *file_path, Value *v ) {
     realloc_check();
     printf("loading from %s\n", file_path);
-    
+
+    int file_size = 0;
+#if !defined(ARDUINO)
+    // posix systems: stat() before opening the file
     struct stat st;
-#if defined(ARDUPILOT_BUILD)
-    if ( AP::FS().stat(file_path, &st) < 0 ) {
-#else
     if ( stat(file_path, &st) < 0 ) {
-#endif
-        printf("Read stat failed: %s - %s\n", file_path, strerror(errno));
+        printf("Read stat failed: %s - %d\n", file_path, errno);
+        printf("does it exist?");
         return false;
     }
-    printf("File size: %s: %d\n", file_path, (int)st.st_size);
-    char read_buf[st.st_size];
+    file_size = (int)st.st_size;
+#endif
 
     // open a file in read mode
-#if defined(ARDUPILOT_BUILD)
-    const int open_fd = AP::FS().open(file_path, O_RDONLY);
+#if defined(ARDUINO)
+    if ( ! configfs->exists(file_path) ) {
+        printf("file does not exist: %s\n", file_path);
+        return false;
+    }
+    File open_fd = configfs->open(file_path, FILE_READ);
+    if ( !open_fd ) {
+        printf("file open failed: %s\n", file_path);
+        return false;
+    }
+    file_size = open_fd.size();
 #else
+    // posix systems
     const int open_fd = open(file_path, O_RDONLY);
-#endif
     if (open_fd == -1) {
-        printf("Open failed: %s - %s\n", file_path, strerror(errno));
+        printf("Open failed: %s - %d\n", file_path, errno);
+        return false;
+    }
+#endif
+
+    printf("File size: %s: %d\n", file_path, file_size);
+    void *read_buf = malloc(file_size);
+    if ( read_buf == nullptr ) {
+        printf("unable to malloc enough bytes for read\n");
         return false;
     }
 
     // read from file
-#if defined(ARDUPILOT_BUILD)
-    ssize_t read_len = AP::FS().read(open_fd, read_buf, sizeof(read_buf));
+#if defined(ARDUINO)
+    ssize_t read_len = open_fd.read(read_buf, file_size);
 #else
-    ssize_t read_len = read(open_fd, read_buf, sizeof(read_buf));
+    ssize_t read_len = read(open_fd, read_buf, file_size);
 #endif
     if ( read_len == -1 ) {
-        printf("Read failed: %s - %s\n", file_path, strerror(errno));
+        printf("Read failed: %s - %d\n", file_path, errno);
         return false;
     }
 
     // close file after reading
-#if defined(ARDUPILOT_BUILD)
-    AP::FS().close(open_fd);
+#if defined(ARDUINO)
+    open_fd.close();
 #else
     close(open_fd);
 #endif
@@ -800,11 +797,12 @@ bool PropertyNode::load_json( const char *file_path, Value *v ) {
     // hal.scheduler->delay(100);
 
     Document tmpdoc(&(doc->GetAllocator()));
-    tmpdoc.Parse<kParseCommentsFlag>(read_buf, read_len);
+    tmpdoc.Parse<kParseCommentsFlag>((char *)read_buf, read_len);
     if ( tmpdoc.HasParseError() ){
         printf("json parse err: %d (%s)\n",
                tmpdoc.GetParseError(),
                GetParseError_En(tmpdoc.GetParseError()));
+        free(read_buf);
         return false;
     }
 
@@ -817,6 +815,7 @@ bool PropertyNode::load_json( const char *file_path, Value *v ) {
         v->AddMember(key, newval, doc->GetAllocator());
     }
 
+    free(read_buf);
     return true;
 }
 
@@ -826,83 +825,41 @@ bool PropertyNode::load_json( const char *file_path, Value *v ) {
 static bool rename_file(const char *current_name, const char *new_name) {
     printf("Renaming %s to %s\n", current_name, new_name);
 
-#if defined(ARDUPILOT_BUILD)
-    struct stat st;
-    if ( AP::FS().stat(current_name, &st) < 0 ) {
-        printf("Read stat failed: %s - %s\n", current_name, strerror(errno));
+#if defined(ARDUINO)
+    if ( configfs != &SD ) {
+        printf("Renaming only works on SD cards (SdFat)\n");
         return false;
     }
-    printf("%s: size %d mtime %d\n", current_name, (int)st.st_size, (int)st.st_mtim.tv_sec);
-    char read_buf[st.st_size];
-
-    int open_fd = -1;
-    
-    // open a file in read mode
-    open_fd = AP::FS().open(current_name, O_RDONLY);
-    if (open_fd == -1) {
-        printf("Open failed: %s - %s\n", current_name, strerror(errno));
+    if ( not SD.exists(current_name) ) {
+        printf("File to rename does not exist: %s\n", current_name);
         return false;
     }
-
-    // read from file
-    ssize_t read_len = AP::FS().read(open_fd, read_buf, sizeof(read_buf));
-    if ( read_len == -1 ) {
-        printf("Read failed: %s - %s\n", current_name, strerror(errno));
+    FsFile orig = SD.sdfs.open(current_name);
+    if ( not orig ) {
+        printf("Cannont open %s before renaming.\n", current_name);
         return false;
     }
-
-    // close file after reading
-    AP::FS().close(open_fd);
-
-    AP::FS().unlink(new_name);  // we don't care if this doesn't exist
-
-    // check disk space
-    uint64_t free_bytes = AP::FS().disk_free("/");
-    console->printf("Disk free: %dk needed: %dk\n",
-                    (unsigned int)free_bytes / 1024,
-                    (unsigned int)(sizeof(read_buf) / 1024) + 1);
-
-    // open a file in write mode
-    open_fd = AP::FS().open(new_name, O_WRONLY | O_CREAT);
-    if (open_fd == -1) {
-        printf("Open %s failed: %s\n", new_name, strerror(errno));
-        return false;
-    }
-
-    // write file
-    ssize_t write_size;
-    write_size = AP::FS().write(open_fd, read_buf, sizeof(read_buf));
-    if ( write_size == -1 ) {
-        printf("Write failed: %s - %s\n", new_name, strerror(errno));
-        return false;
-    }
-
-    // close file
-    AP::FS().close(open_fd);
-
-    // set the mtime of the copy to the original
-    AP::FS().set_mtime(new_name, st.st_mtim.tv_sec);
-
-    AP::FS().unlink(current_name);  // remove the original
+    orig.rename(new_name);
+    orig.close();
 #else
     rename(current_name, new_name);
 #endif
-      
+
     return true;
 }
 
 static bool save_json( const char *file_path, Value *v ) {
-    
+
     StringBuffer buffer;
     PrettyWriter<StringBuffer> writer(buffer);
     v->Accept(writer);
 
     // check disk space
-#if defined(ARDUPILOT_BUILD)
-    uint64_t free_bytes = AP::FS().disk_free("/");
-#elif defined(WIN32)
-    // don't check, assume unlimited space on a windows PC
-    uint64_t free_bytes = 9999999;
+#if defined(ARDUINO)
+    // SdFat sdcard;
+    // long lFreeClusters = sdcard.vol()->freeClusterCount();
+    // uint64_t free_bytes = lFreeClusters * 512;  // clusters are always 512k
+    uint64_t free_bytes = configfs->totalSize() - configfs->usedSize();
 #else
     struct statfs statfs_buf;
     uint64_t free_bytes;
@@ -917,41 +874,54 @@ static bool save_json( const char *file_path, Value *v ) {
            (unsigned int)free_bytes / 1024,
            (unsigned int)(buffer.GetSize() / 1024) + 1);
 
-    // rename existing file
-    string bak = (string)file_path + ".bak";
-    rename_file(file_path, bak.c_str());
-    
-    // open a file in write mode
-#if defined(ARDUPILOT_BUILD)
-    const int open_fd = AP::FS().open(file_path, O_WRONLY | O_CREAT);
-#elif defined(__PX4_POSIX)
-    const int open_fd = ::open(file_path, O_WRONLY | O_CREAT, PX4_O_MODE_666);
-#else
-    const int open_fd = ::open(file_path, O_WRONLY | O_CREAT, 0660);
-#endif
-    if (open_fd == -1) {
-        printf("Open %s failed: %s\n", file_path, strerror(errno));
+    // open a new file in write mode
+#if defined(ARDUINO)
+    string new_name;
+    if ( configfs == &SD ) {
+        // SdFat has rename
+        new_name = (string)file_path + ".new";
+    } else {
+        // LittleFS does not have rename
+        new_name = (string)file_path;
+    }
+    File open_fd = configfs->open(new_name.c_str(), O_WRONLY | O_CREAT);
+    if ( !open_fd ) {
+        printf("file open failed: %s\n", file_path);
         return false;
     }
+#else
+    const int open_fd = ::open(file_path, O_WRONLY | O_CREAT, 0660);
+    if (open_fd == -1) {
+        printf("Open %s failed: %d\n", file_path, errno);
+        return false;
+    }
+#endif
 
     // write file
-    ssize_t write_size;
-#if defined(ARDUPILOT_BUILD)
-    write_size = AP::FS().write(open_fd, buffer.GetString(), buffer.GetSize());
+    std::size_t write_size;
+#if defined(ARDUINO)
+    write_size = open_fd.write(buffer.GetString(), buffer.GetSize());
 #else
     write_size = write(open_fd, buffer.GetString(), buffer.GetSize());
 #endif
-    if ( write_size == -1 ) {
+    if ( write_size != buffer.GetSize() ) {
         printf("Write failed - %s\n", strerror(errno));
         return false;
     }
 
     // close file
-#if defined(ARDUPILOT_BUILD)
-    AP::FS().close(open_fd);
+#if defined(ARDUINO)
+    open_fd.close();
 #else
     close(open_fd);
 #endif
+
+    // rename existing file to .bak
+    string bak = (string)file_path + ".bak";
+    rename_file(file_path, bak.c_str());
+
+    // rename new file to final file name
+    rename_file(new_name.c_str(), file_path);
 
     return true;
 }
@@ -996,7 +966,7 @@ bool PropertyNode::load( const char *file_path ) {
         base_path = full_path.substr(0, pos);
     }
     recursively_expand_includes(base_path, val);
-    
+
     // printf("Updated node contents:\n");
     // pretty_print();
     // printf("\n");
@@ -1027,23 +997,21 @@ void PropertyNode::pretty_print() {
     PrettyWriter<StringBuffer> writer(buffer);
     //PrettyWriter<StringBuffer, UTF8<>, UTF8<>, CrtAllocator, kWriteNanAndInfFlag> writer(buffer);
     //Writer<StringBuffer, UTF8<>, UTF8<>, CrtAllocator, kWriteNanAndInfFlag> writer(buffer);
-    bool error = val->Accept(writer);
+
+    // bool error = val->Accept(writer);
+    val->Accept(writer);
+
     // work around size limitations
     // printf("buffer length: %d\n", buffer.GetSize());
     const char *ptr = buffer.GetString();
     for ( unsigned int i = 0; i < buffer.GetSize(); i++ ) {
         printf("%c", ptr[i]);
-#if defined(ARDUPILOT_BUILD)
-        // needed so we don't overwhelm the serial output thread buffer
-        if ( i % 256 == 0 ) {
-            hal.scheduler->delay(50);
-        }
-#endif
     }
     printf("\n");
-    if ( error ) {
-        printf("json formating error (nan or inf?)\n");
-    }
+
+    // if ( error ) {
+    //     printf("json formating errro (nan or inf?)\n");
+    // }
 }
 
 string PropertyNode::get_json_string() {

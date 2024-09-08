@@ -1,7 +1,7 @@
 #pragma once
 
-#if defined(ARDUPILOT_BUILD)
-#  undef _GLIBCXX_USE_C99_STDIO   // vsnprintf() not defined
+#if defined(ARDUINO)
+#  include <Arduino.h>
 #endif
 
 #include <stdio.h>
@@ -80,7 +80,7 @@ public:
 
     // load/merge json file under this node
     bool load( const char *file_path );
-    
+
     // save contents of node as a json file
     bool save( const char *file_path );
 
