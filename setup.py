@@ -13,9 +13,9 @@ setup(name="PropertyTree",
           Extension("PropertyTree",
                     define_macros=[("HAVE_PYBIND11", "1")],
                     sources=["src/props2.cpp",
-                             "src/strutils.cpp",
+                             "src/util/strutils.cpp",
                              "src/pybind11.cpp"],
                     depends=["src/props2.h",
-                             "src/strutils.h"])
+                             "src/util/strutils.h"])
           ]
       )

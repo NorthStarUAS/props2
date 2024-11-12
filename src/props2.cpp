@@ -886,13 +886,14 @@ static bool save_json( const char *file_path, Value *v ) {
     }
     File open_fd = configfs->open(new_name.c_str(), O_WRONLY | O_CREAT);
     if ( !open_fd ) {
-        printf("file open failed: %s\n", file_path);
+        printf("file open failed: %s\n", new_name.c_str());
         return false;
     }
 #else
-    const int open_fd = ::open(file_path, O_WRONLY | O_CREAT, 0660);
+    string new_name = (string)file_path + ".new";
+    const int open_fd = ::open(new_name.c_str(), O_WRONLY | O_CREAT, 0660);
     if (open_fd == -1) {
-        printf("Open %s failed: %d\n", file_path, errno);
+        printf("Open %s failed: %d\n", new_name.c_str(), errno);
         return false;
     }
 #endif
@@ -1057,7 +1058,7 @@ bool PropertyNode::set_json_string( string message ) {
 
 Document *PropertyNode::doc = nullptr;
 int *PropertyNode::realloc_counter = nullptr;
- 
+
 #if 0
 int main() {
    // suck in all the input
