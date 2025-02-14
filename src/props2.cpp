@@ -1,6 +1,12 @@
 #if defined(ARDUINO)
 #  include <SD.h>
    extern FS *configfs;  // SD or LittleFS_Program (or other) defined in the top level sketch
+#elif defined(WIN32) || defined(_WIN32) || defined(WIN64) || defined(_WIN64)
+#  include <sys/stat.h>
+#  include <sys/types.h>
+#  include <fcntl.h>            // open()
+#  include <io.h>               // open() for MSVC-2022
+//#  include <unistd.h>           // read()
 #else
 #  include <sys/stat.h>
 #  include <sys/statfs.h>
@@ -26,7 +32,7 @@ using std::string;
 
 static bool is_integer(const string val) {
     for ( unsigned int i = 0; i < val.length(); i++ ) {
-        if ( val[i] < '0' or val[i] > '9' ) {
+        if ( val[i] < '0' || val[i] > '9' ) {
             return false;
         }
     }
@@ -182,7 +188,7 @@ bool PropertyNode::isValue(const char *name) {
     if ( val->IsObject() ) {
         if ( val->HasMember(name) ) {
             Value &v = (*val)[name];
-            return !v.IsObject() and !v.IsArray();
+            return !v.IsObject() && !v.IsArray();
         }
     }
     return false;
@@ -193,8 +199,8 @@ bool PropertyNode::isValue(const char *name, unsigned int index) {
     if ( val->IsObject() ) {
         if ( val->HasMember(name) ) {
             Value &v = (*val)[name];
-            if ( v.IsArray() and index < v.Size() ) {
-                return !v[index].IsObject() and !v[index].IsArray();
+            if ( v.IsArray() && index < v.Size() ) {
+                return !v[index].IsObject() && !v[index].IsArray();
             }
         }
     }
@@ -220,7 +226,7 @@ vector<string> PropertyNode::getChildren(bool expand) {
     if ( val->IsObject() ) {
         for (Value::ConstMemberIterator itr = val->MemberBegin(); itr != val->MemberEnd(); ++itr) {
             string name = itr->name.GetString();
-            if ( expand and itr->value.IsArray() ) {
+            if ( expand && itr->value.IsArray() ) {
                 for ( unsigned int i = 0; i < itr->value.Size(); i++ ) {
                     string ename = name + "/" + std::to_string(i);
                     result.push_back(ename);
@@ -248,7 +254,7 @@ static bool getValueAsBool( Value &v ) {
 	return fabs(v.GetDouble()) < 0.0000001;
     } else if ( v.IsString() ) {
         string s = v.GetString();
-        if ( s == "true" or s == "True" or s == "TRUE" ) {
+        if ( s == "true" || s == "True" || s == "TRUE" ) {
             return true;
         } else {
             return false;
@@ -828,7 +834,7 @@ bool PropertyNode::load_json( const char *file_path, Value *v ) {
 #if defined(ARDUINO)
     ssize_t read_len = open_fd.read(read_buf, file_size);
 #else
-    ssize_t read_len = read(open_fd, read_buf, file_size);
+    size_t read_len = read(open_fd, read_buf, file_size);
 #endif
     if ( read_len == -1 ) {
         printf("Read failed: %s - %d\n", file_path, errno);
@@ -909,6 +915,8 @@ static bool save_json( const char *file_path, Value *v ) {
     // long lFreeClusters = sdcard.vol()->freeClusterCount();
     // uint64_t free_bytes = lFreeClusters * 512;  // clusters are always 512k
     uint64_t free_bytes = configfs->totalSize() - configfs->usedSize();
+#elif defined(_WIN32) || defined(_WIN64)
+    int free_bytes = 1000000000;
 #else
     struct statfs statfs_buf;
     uint64_t free_bytes;
@@ -980,14 +988,14 @@ static bool save_json( const char *file_path, Value *v ) {
 void PropertyNode::recursively_expand_includes(string base_path, Value *v) {
     realloc_check();
     if ( v->IsObject() ) {
-        if ( v->HasMember("include") and (*v)["include"].IsString() ) {
+        if ( v->HasMember("include") && (*v)["include"].IsString() ) {
             string full_path = base_path + "/" + (*v)["include"].GetString();
             printf("Need to include: %s\n", full_path.c_str());
             load_json( full_path.c_str(), v );
             v->RemoveMember("include");
         } else {
             for (Value::MemberIterator itr = v->MemberBegin(); itr != v->MemberEnd(); ++itr) {
-                if ( itr->value.IsObject() or itr->value.IsArray() ) {
+                if ( itr->value.IsObject() || itr->value.IsArray() ) {
                     printf("expanding: %s\n", itr->name.GetString());
                     recursively_expand_includes(base_path, &itr->value );
                 }
@@ -996,7 +1004,7 @@ void PropertyNode::recursively_expand_includes(string base_path, Value *v) {
     } else if ( v->IsArray() ) {
         printf("Is an array\n");
         for (Value::ValueIterator itr = v->Begin(); itr != v->End(); ++itr) {
-            if ( itr->IsObject() or itr->IsArray() ) {
+            if ( itr->IsObject() || itr->IsArray() ) {
                 printf("recurse array\n");
                 recursively_expand_includes(base_path, itr );
             }
@@ -1012,7 +1020,7 @@ bool PropertyNode::load( const char *file_path ) {
     string full_path = file_path;
     size_t pos = full_path.rfind("/");
     string base_path = "";
-    if ( pos > 0 and pos != string::npos ) {
+    if ( pos > 0 && pos != string::npos ) {
         base_path = full_path.substr(0, pos);
     }
     recursively_expand_includes(base_path, val);
