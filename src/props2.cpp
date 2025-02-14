@@ -465,6 +465,29 @@ string PropertyNode::getString( const char *name ) {
     return "";
 }
 
+int PropertyNode::getInt( const char *name, unsigned int index ) {
+    realloc_check();
+    if ( val->IsObject() ) {
+        if ( val->HasMember(name) ) {
+            Value &v = (*val)[name];
+            if ( v.IsArray() ) {
+                if ( index < v.Size() ) {
+                    return getValueAsInt(v[index]);
+                } else {
+                    printf("index out of bounds: %s\n", name);
+                }
+            } else {
+                printf("not an array: %s\n", name);
+            }
+        } else {
+            // printf("no member in getUInt(%s, %d)\n", name, index);
+        }
+    } else {
+        printf("v is not an object\n");
+    }
+    return 0;
+}
+
 unsigned int PropertyNode::getUInt( const char *name, unsigned int index ) {
     realloc_check();
     if ( val->IsObject() ) {
@@ -650,6 +673,32 @@ bool PropertyNode::setString( const char *name, string s ) {
         // printf("%s already exists\n", name);
     }
     (*val)[name].SetString(s.c_str(), s.length(), doc->GetAllocator());
+    return true;
+}
+
+bool PropertyNode::setInt( const char *name, int n, unsigned int index ) {
+    realloc_check();
+    if ( !val->IsObject() ) {
+        printf("  converting value to object\n");
+        // hal.scheduler->delay(100);
+        val->SetObject();
+    }
+    if ( !val->HasMember(name) ) {
+        // printf("creating %s\n", name);
+        Value key(name, doc->GetAllocator());
+        Value a(kArrayType);
+        val->AddMember(key, a, doc->GetAllocator());
+    } else {
+        // printf("%s already exists\n", name);
+        Value &a = (*val)[name];
+        if ( ! a.IsArray() ) {
+            printf("converting member to array: %s\n", name);
+            a.SetArray();
+        }
+    }
+    Value &a = (*val)[name];
+    extend_array(&a, index+1);    // protect against out of range
+    a[index] = n;
     return true;
 }
 

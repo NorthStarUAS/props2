@@ -74,9 +74,10 @@ public:
     bool setString( const char *name, string s ); // returns true if successful
 
     // indexed value setters
-    bool setUInt( const char *name, unsigned int index, unsigned int u ); // returns true if successful
-    bool setDouble( const char *name, double x, unsigned int u ); // returns true if successful
-    bool setString( const char *name, string s, unsigned int u ); // returns true if successful
+    bool setInt( const char *name, int n, unsigned int index ); // returns true if successful
+    bool setUInt( const char *name, unsigned int u, unsigned int index ); // returns true if successful
+    bool setDouble( const char *name, double x, unsigned int index ); // returns true if successful
+    bool setString( const char *name, string s, unsigned int index ); // returns true if successful
 
     // load/merge json file under this node
     bool load( const char *file_path );
@@ -96,7 +97,7 @@ public:
         d.realloc_counter = realloc_counter;
         return d;
     }
-    
+
     void set_shared_state( SharedStateWrapper d ) {
         doc = d.doc;
         realloc_counter = d.realloc_counter;
