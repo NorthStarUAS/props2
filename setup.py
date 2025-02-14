@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 
 from setuptools import setup, Extension
-import pybind11
+import pybind11   # apt install python3-pybind11 (pip install pybind11)
 
 setup(name="PropertyTree",
       version="2.0",
