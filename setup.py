@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 
 from setuptools import setup, Extension
+import pybind11
 
 setup(name="PropertyTree",
       version="2.0",
@@ -15,6 +16,7 @@ setup(name="PropertyTree",
                     sources=["src/props2.cpp",
                              "src/util/strutils.cpp",
                              "src/pybind11.cpp"],
+                    include_dirs=[pybind11.get_include()],
                     depends=["src/props2.h",
                              "src/util/strutils.h"])
           ]
