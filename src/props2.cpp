@@ -83,7 +83,7 @@ Value *PropertyNode::find_node_from_path(Value *start_node, string path, bool cr
                 node = &(*node)[tokens[i].c_str()];
             } else if ( create ) {
                 (*realloc_counter)++;
-                printf("    creating %s (%d)\n", tokens[i].c_str(), *realloc_counter);
+                // printf("    creating %s (%d)\n", tokens[i].c_str(), *realloc_counter);
                 Value key;
                 key.SetString(tokens[i].c_str(), tokens[i].length(), doc->GetAllocator());
                 Value newobj(kObjectType);
@@ -1099,7 +1099,7 @@ bool PropertyNode::set_json_string( string message ) {
 
     // merge each new top level member individually
     for (Value::ConstMemberIterator itr = tmpdoc.MemberBegin(); itr != tmpdoc.MemberEnd(); ++itr) {
-        printf(" merging: %s\n", itr->name.GetString());
+        // printf(" merging: %s\n", itr->name.GetString());
         Value key;
         key.SetString(itr->name.GetString(), itr->name.GetStringLength(), doc->GetAllocator());
         Value &newval = tmpdoc[itr->name.GetString()];
