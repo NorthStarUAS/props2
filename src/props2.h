@@ -22,7 +22,7 @@ using namespace rapidjson;
 class SharedStateWrapper {
 public:
     Document *doc;
-    int *realloc_counter;
+    int *realloc_check_counter;
 };
 
 class PropertyNode {
@@ -94,32 +94,35 @@ public:
         init_shared_state();
         SharedStateWrapper d;
         d.doc = doc;
-        d.realloc_counter = realloc_counter;
+        d.realloc_check_counter = realloc_check_counter;
         return d;
     }
 
     void set_shared_state( SharedStateWrapper d ) {
         doc = d.doc;
-        realloc_counter = d.realloc_counter;
+        realloc_check_counter = d.realloc_check_counter;
     }
 
 private:
     // shared state instances
     static Document *doc;
-    static int *realloc_counter;
+    static int *realloc_check_counter;
 
     // pointer to rapidjson Object;
     Value *val = nullptr;
     string saved_path;
-    int saved_realloc_counter;
+    int saved_realloc_check_counter;
 
     inline void init_shared_state() {
+        // printf("init_shared_state()\n");
         if ( doc == nullptr ) {
+            printf("  doc is nullptr, creating new document\n");
             doc = new Document;
         }
-        if ( realloc_counter == nullptr ) {
-            realloc_counter = new int;
-            *realloc_counter = 0;
+        if ( realloc_check_counter == nullptr ) {
+            printf("  realloc_check_counter is nullptr, creating new realloc_check_counter\n");
+            realloc_check_counter = new int;
+            *realloc_check_counter = 0;
         }
     }
     bool extend_array(Value *node, int size);

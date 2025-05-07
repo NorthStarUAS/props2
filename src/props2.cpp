@@ -82,11 +82,11 @@ Value *PropertyNode::find_node_from_path(Value *start_node, string path, bool cr
                 // printf("    has %s\n", tokens[i].c_str());
                 node = &(*node)[tokens[i].c_str()];
             } else if ( create ) {
-                (*realloc_counter)++;
-                // printf("    creating %s (%d)\n", tokens[i].c_str(), *realloc_counter);
+                // printf("    creating %s (%d)\n", tokens[i].c_str(), *realloc_check_counter);
                 Value key;
                 key.SetString(tokens[i].c_str(), tokens[i].length(), doc->GetAllocator());
                 Value newobj(kObjectType);
+                (*realloc_check_counter)++;
                 node->AddMember(key, newobj, doc->GetAllocator());
                 node = &(*node)[tokens[i].c_str()];
                 // printf("  new node: %p\n", node);
@@ -107,14 +107,14 @@ Value *PropertyNode::find_node_from_path(Value *start_node, string path, bool cr
 
 PropertyNode::PropertyNode(string abs_path, bool create) {
     init_shared_state();
-    // printf("PropertyNode(%s) %d\n", abs_path.c_str(), (int)&doc);
+    // printf("PropertyNode(%s) %d\n", abs_path.c_str(), (unsigned long)&doc);
     if ( abs_path[0] != '/' ) {
         printf("  not an absolute path\n");
         return;
     }
     val = find_node_from_path(doc, abs_path, create);
     saved_path = abs_path;
-    saved_realloc_counter = *realloc_counter;
+    saved_realloc_check_counter = *realloc_check_counter;
     // pretty_print();
 }
 
@@ -124,13 +124,13 @@ PropertyNode::PropertyNode(string abs_path, bool create) {
 //}
 
 void PropertyNode::realloc_check() {
-    if ( saved_realloc_counter != *realloc_counter ) {
-        // printf("REALLOC HAPPENED, updating pointer to %s\n", saved_path.c_str());
-        // printf(" saved %d  new %d\n", saved_realloc_counter, *realloc_counter);
+    if ( saved_realloc_check_counter != *realloc_check_counter ) {
+        // printf("realloc possible, updating pointer to %s\n", saved_path.c_str());
+        // printf(" saved %d  new %d\n", saved_realloc_check_counter, *realloc_check_counter);
         // Value *tmp = val;
         val = find_node_from_path(doc, saved_path, true);
         // printf("  orig %p -> new %p\n", tmp, val);
-        saved_realloc_counter = *realloc_counter;
+        saved_realloc_check_counter = *realloc_check_counter;
     }
 }
 
@@ -572,6 +572,7 @@ bool PropertyNode::setBool( const char *name, bool b ) {
     if ( !val->HasMember(name) ) {
         // printf("creating %s\n", name);
         Value key(name, doc->GetAllocator());
+        (*realloc_check_counter)++;
         val->AddMember(key, newval, doc->GetAllocator());
     } else {
         // printf("%s already exists\n", name);
@@ -589,6 +590,7 @@ bool PropertyNode::setInt( const char *name, int n ) {
     if ( !val->HasMember(name) ) {
         // printf("creating %s\n", name);
         Value key(name, doc->GetAllocator());
+        (*realloc_check_counter)++;
         val->AddMember(key, newval, doc->GetAllocator());
     } else {
         // printf("%s already exists\n", name);
@@ -606,6 +608,7 @@ bool PropertyNode::setUInt( const char *name, unsigned int u ) {
     if ( !val->HasMember(name) ) {
         // printf("creating %s\n", name);
         Value key(name, doc->GetAllocator());
+        (*realloc_check_counter)++;
         val->AddMember(key, newval, doc->GetAllocator());
     } else {
         // printf("%s already exists\n", name);
@@ -623,6 +626,7 @@ bool PropertyNode::setInt64( const char *name, int64_t n ) {
     if ( !val->HasMember(name) ) {
         printf("creating %s\n", name);
         Value key(name, doc->GetAllocator());
+        (*realloc_check_counter)++;
         val->AddMember(key, newval, doc->GetAllocator());
     } else {
         // printf("%s already exists\n", name);
@@ -640,6 +644,7 @@ bool PropertyNode::setUInt64( const char *name, uint64_t u ) {
     if ( !val->HasMember(name) ) {
         // printf("creating %s\n", name);
         Value key(name, doc->GetAllocator());
+        (*realloc_check_counter)++;
         val->AddMember(key, newval, doc->GetAllocator());
     } else {
         // printf("%s already exists\n", name);
@@ -657,6 +662,7 @@ bool PropertyNode::setDouble( const char *name, double x ) {
     if ( !val->HasMember(name) ) {
         // printf("creating %s\n", name);
         Value key(name, doc->GetAllocator());
+        (*realloc_check_counter)++;
         val->AddMember(key, newval, doc->GetAllocator());
     } else {
         // printf("%s already exists\n", name);
@@ -666,6 +672,7 @@ bool PropertyNode::setDouble( const char *name, double x ) {
 }
 
 bool PropertyNode::setString( const char *name, string s ) {
+    // printf("setString in %s of %s to %s\n", saved_path.c_str(), name, s.c_str());
     realloc_check();
     if ( !val->IsObject() ) {
         val->SetObject();
@@ -674,6 +681,7 @@ bool PropertyNode::setString( const char *name, string s ) {
         Value newval("");
         // printf("creating %s\n", name);
         Value key(name, doc->GetAllocator());
+        (*realloc_check_counter)++;
         val->AddMember(key, newval, doc->GetAllocator());
     } else {
         // printf("%s already exists\n", name);
@@ -693,6 +701,7 @@ bool PropertyNode::setInt( const char *name, int n, unsigned int index ) {
         // printf("creating %s\n", name);
         Value key(name, doc->GetAllocator());
         Value a(kArrayType);
+        (*realloc_check_counter)++;
         val->AddMember(key, a, doc->GetAllocator());
     } else {
         // printf("%s already exists\n", name);
@@ -719,6 +728,7 @@ bool PropertyNode::setUInt( const char *name, unsigned int u, unsigned int index
         // printf("creating %s\n", name);
         Value key(name, doc->GetAllocator());
         Value a(kArrayType);
+        (*realloc_check_counter)++;
         val->AddMember(key, a, doc->GetAllocator());
     } else {
         // printf("%s already exists\n", name);
@@ -745,6 +755,7 @@ bool PropertyNode::setDouble( const char *name, double x, unsigned int index ) {
         // printf("creating %s\n", name);
         Value key(name, doc->GetAllocator());
         Value a(kArrayType);
+        (*realloc_check_counter)++;
         val->AddMember(key, a, doc->GetAllocator());
     } else {
         // printf("%s already exists\n", name);
@@ -771,6 +782,7 @@ bool PropertyNode::setString( const char *name, string s, unsigned int index ) {
         // printf("creating %s\n", name);
         Value key(name, doc->GetAllocator());
         Value a(kArrayType);
+        (*realloc_check_counter)++;
         val->AddMember(key, a, doc->GetAllocator());
     } else {
         // printf("%s already exists\n", name);
@@ -867,6 +879,7 @@ bool PropertyNode::load_json( const char *file_path, Value *v ) {
         Value key;
         key.SetString(itr->name.GetString(), itr->name.GetStringLength(), doc->GetAllocator());
         Value &newval = tmpdoc[itr->name.GetString()];
+        (*realloc_check_counter)++;
         v->AddMember(key, newval, doc->GetAllocator());
     }
 
@@ -1087,6 +1100,14 @@ string PropertyNode::get_json_string() {
     return buffer.GetString();
 }
 
+// Note: this doesn't recursively update individual values in the whole subtree
+// ... it really only works correctly for flat subnodes with no sub children
+// nodes. Child nodes (subtrees) get overwritten by the new subtree.  This means
+// local changes to the subtree will be lost and it's als a big ugly memory leak.
+//
+// That said, you can send whole trees if you understand the caveates.
+//
+// Todo make recursive
 bool PropertyNode::set_json_string( string message ) {
     Document tmpdoc(&(doc->GetAllocator()));
     tmpdoc.Parse<kParseCommentsFlag>(message.c_str(), message.length());
@@ -1103,18 +1124,20 @@ bool PropertyNode::set_json_string( string message ) {
         Value key;
         key.SetString(itr->name.GetString(), itr->name.GetStringLength(), doc->GetAllocator());
         Value &newval = tmpdoc[itr->name.GetString()];
-        if ( val->HasMember(key) ) {
+       if ( val->HasMember(key) ) {
             (*val)[itr->name.GetString()] = newval;
         } else {
             val->AddMember(key, newval, doc->GetAllocator());
         }
     }
 
+    (*realloc_check_counter)++;  // force refinding node paths
+
     return true;
 }
 
 Document *PropertyNode::doc = nullptr;
-int *PropertyNode::realloc_counter = nullptr;
+int *PropertyNode::realloc_check_counter = nullptr;
 
 #if 0
 int main() {
