@@ -1103,37 +1103,69 @@ string PropertyNode::get_json_string() {
 // Note: this doesn't recursively update individual values in the whole subtree
 // ... it really only works correctly for flat subnodes with no sub children
 // nodes. Child nodes (subtrees) get overwritten by the new subtree.  This means
-// local changes to the subtree will be lost and it's als a big ugly memory leak.
+// local changes to the subtree will be lost and it's also a big ugly memory leak.
 //
 // That said, you can send whole trees if you understand the caveates.
 //
 // Todo make recursive
 bool PropertyNode::set_json_string( string message ) {
-    Document tmpdoc(&(doc->GetAllocator()));
-    tmpdoc.Parse<kParseCommentsFlag>(message.c_str(), message.length());
-    if ( tmpdoc.HasParseError() ){
+    // Document tmpdoc(&(doc->GetAllocator()));
+    tmpdoc->Parse<kParseCommentsFlag>(message.c_str(), message.length());
+    if ( tmpdoc->HasParseError() ){
         printf("json parse err: %d (%s)\n",
-               tmpdoc.GetParseError(),
+               tmpdoc->GetParseError(),
                GetParseError_En(tmpdoc.GetParseError()));
         return false;
     }
 
-    // merge each new top level member individually
-    for (Value::ConstMemberIterator itr = tmpdoc.MemberBegin(); itr != tmpdoc.MemberEnd(); ++itr) {
-        // printf(" merging: %s\n", itr->name.GetString());
-        Value key;
-        key.SetString(itr->name.GetString(), itr->name.GetStringLength(), doc->GetAllocator());
-        Value &newval = tmpdoc[itr->name.GetString()];
-       if ( val->HasMember(key) ) {
-            (*val)[itr->name.GetString()] = newval;
-        } else {
-            val->AddMember(key, newval, doc->GetAllocator());
-        }
-    }
+    // // merge each new top level member individually
+    // for (Value::ConstMemberIterator itr = tmpdoc.MemberBegin(); itr != tmpdoc.MemberEnd(); ++itr) {
+    //     // printf(" merging: %s\n", itr->name.GetString());
+    //     Value key;
+    //     key.SetString(itr->name.GetString(), itr->name.GetStringLength(), doc->GetAllocator());
+    //     Value &newval = tmpdoc[itr->name.GetString()];
+    //     if ( val->HasMember(key) ) {
+    //         if ( (*val)[itr->name.GetString()].IsObject() && newval->IsObject() ) {
+    //             // recurse
+    //         } else {
+    //             // set val
+    //             (*val)[itr->name.GetString()] = newval;
+    //         }
+    //     } else {
+    //         val->AddMember(key, newval, doc->GetAllocator());
+    //     }
+    // }
+
+    recursive_tree_copy((*tmpdoc), (*val), "");
 
     (*realloc_check_counter)++;  // force refinding node paths
 
     return true;
+}
+
+void PropertyNode::recursive_tree_copy(Value &src, Value &dst, string indent) {
+    // merge each new top level member individually
+    for (Value::ConstMemberIterator itr = src.MemberBegin(); itr != src.MemberEnd(); ++itr) {
+        // printf("%smerging: %s\n", indent.c_str(), itr->name.GetString());
+        Value &newval = src[itr->name.GetString()];
+        if ( dst.HasMember(itr->name.GetString()) ) {
+            // printf("%s exists\n", indent.c_str());
+            if dst[itr->name.GetString()].IsObject() && newval.IsObject() ) {
+                // recurse
+                // printf("%s recurse\n", indent.c_str());
+                recursive_tree_copy(newval, dst[itr->name.GetString()], indent + " ");
+            } else {
+                // set value
+                // printf("%s set val\n", indent.c_str());
+                dst[itr->name.GetString()] = newval;
+            }
+        } else {
+            // printf("%s new add\n", indent.c_str());
+            Value key;
+            key.SetString(itr->name.GetString(), itr->name.GetStringLength(), doc->GetAllocator());
+            dst.AddMember(key, newval, doc->GetAllocator());
+        }
+    }
 }
 
 Document *PropertyNode::doc = nullptr;

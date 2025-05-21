@@ -106,6 +106,7 @@ public:
 private:
     // shared state instances
     static Document *doc;
+    static Document tmpdoc;
     static int *realloc_check_counter;
 
     // pointer to rapidjson Object;
@@ -119,6 +120,10 @@ private:
             printf("  doc is nullptr, creating new document\n");
             doc = new Document;
         }
+        if ( tmpdoc == nullptr ) {
+            printf("  tmpdoc is nullptr, creating new document\n");
+            tmpdoc = new Document;
+        }
         if ( realloc_check_counter == nullptr ) {
             printf("  realloc_check_counter is nullptr, creating new realloc_check_counter\n");
             realloc_check_counter = new int;
@@ -127,6 +132,7 @@ private:
     }
     bool extend_array(Value *node, int size);
     Value *find_node_from_path(Value *start_node, string path, bool create);
+    void recursive_tree_copy(Value &src, Value &dst, string indent);
     void realloc_check();
     bool load_json( const char *file_path, Value *v );
     void recursively_expand_includes(string base_path, Value *v);
