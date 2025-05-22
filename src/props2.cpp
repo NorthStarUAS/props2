@@ -863,7 +863,7 @@ bool PropertyNode::load_json( const char *file_path, Value *v ) {
     // printf("Read %d bytes.\nstring: %s\n", read_len, read_buf);
     // hal.scheduler->delay(100);
 
-    Document tmpdoc(&(doc->GetAllocator()));
+    // Document tmpdoc(&(doc->GetAllocator()));
     tmpdoc.Parse<kParseCommentsFlag>((char *)read_buf, read_len);
     if ( tmpdoc.HasParseError() ){
         printf("json parse err: %d (%s)\n",
@@ -879,8 +879,8 @@ bool PropertyNode::load_json( const char *file_path, Value *v ) {
         Value key;
         key.SetString(itr->name.GetString(), itr->name.GetStringLength(), doc->GetAllocator());
         Value &newval = tmpdoc[itr->name.GetString()];
-        (*realloc_check_counter)++;
         v->AddMember(key, newval, doc->GetAllocator());
+        (*realloc_check_counter)++;
     }
 
     free(read_buf);
@@ -1110,10 +1110,10 @@ string PropertyNode::get_json_string() {
 // Todo make recursive
 bool PropertyNode::set_json_string( string message ) {
     // Document tmpdoc(&(doc->GetAllocator()));
-    tmpdoc->Parse<kParseCommentsFlag>(message.c_str(), message.length());
-    if ( tmpdoc->HasParseError() ){
+    tmpdoc.Parse<kParseCommentsFlag>(message.c_str(), message.length());
+    if ( tmpdoc.HasParseError() ){
         printf("json parse err: %d (%s)\n",
-               tmpdoc->GetParseError(),
+               tmpdoc.GetParseError(),
                GetParseError_En(tmpdoc.GetParseError()));
         return false;
     }
@@ -1136,7 +1136,7 @@ bool PropertyNode::set_json_string( string message ) {
     //     }
     // }
 
-    recursive_tree_copy((*tmpdoc), (*val), "");
+    recursive_tree_copy(tmpdoc, (*val), "");
 
     (*realloc_check_counter)++;  // force refinding node paths
 
@@ -1150,7 +1150,7 @@ void PropertyNode::recursive_tree_copy(Value &src, Value &dst, string indent) {
         Value &newval = src[itr->name.GetString()];
         if ( dst.HasMember(itr->name.GetString()) ) {
             // printf("%s exists\n", indent.c_str());
-            if dst[itr->name.GetString()].IsObject() && newval.IsObject() ) {
+            if ( dst[itr->name.GetString()].IsObject() && newval.IsObject() ) {
                 // recurse
                 // printf("%s recurse\n", indent.c_str());
                 recursive_tree_copy(newval, dst[itr->name.GetString()], indent + " ");
@@ -1170,6 +1170,7 @@ void PropertyNode::recursive_tree_copy(Value &src, Value &dst, string indent) {
 
 Document *PropertyNode::doc = nullptr;
 int *PropertyNode::realloc_check_counter = nullptr;
+Document PropertyNode::tmpdoc;
 
 #if 0
 int main() {

@@ -106,7 +106,7 @@ public:
 private:
     // shared state instances
     static Document *doc;
-    static Document tmpdoc;
+    static Document tmpdoc; // can be statically allocated I think
     static int *realloc_check_counter;
 
     // pointer to rapidjson Object;
@@ -119,10 +119,6 @@ private:
         if ( doc == nullptr ) {
             printf("  doc is nullptr, creating new document\n");
             doc = new Document;
-        }
-        if ( tmpdoc == nullptr ) {
-            printf("  tmpdoc is nullptr, creating new document\n");
-            tmpdoc = new Document;
         }
         if ( realloc_check_counter == nullptr ) {
             printf("  realloc_check_counter is nullptr, creating new realloc_check_counter\n");
