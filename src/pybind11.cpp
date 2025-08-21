@@ -31,6 +31,7 @@ PYBIND11_MODULE(PropertyTree, m) {
         .def("getLen", &PropertyNode::getLen)
         // .def("setLen", &PropertyNode::setLen)
         .def("getChildren", &PropertyNode::getChildren)
+        // .def("getChildren", static_cast<vector<string> (PropertyNode::*)(bool)>(&PropertyNode::getChildren))
 
         .def("getBool", static_cast<bool (PropertyNode::*)(const char *)>(&PropertyNode::getBool))
         .def("getInt", static_cast<int (PropertyNode::*)(const char *)>(&PropertyNode::getInt))

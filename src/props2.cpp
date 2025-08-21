@@ -863,6 +863,9 @@ bool PropertyNode::load_json( const char *file_path, Value *v ) {
     // printf("Read %d bytes.\nstring: %s\n", read_len, read_buf);
     // hal.scheduler->delay(100);
 
+    // fixme: create a new tmpdoc here with it's own default allocator so that
+    // gets freed at the end of this function.
+
     // Document tmpdoc(&(doc->GetAllocator()));
     tmpdoc.Parse<kParseCommentsFlag>((char *)read_buf, read_len);
     if ( tmpdoc.HasParseError() ){
@@ -873,6 +876,7 @@ bool PropertyNode::load_json( const char *file_path, Value *v ) {
         return false;
     }
 
+    // fixme: think about if I want this to happen recursive, or just overwrite?
     // merge each new top level member individually
     for (Value::ConstMemberIterator itr = tmpdoc.MemberBegin(); itr != tmpdoc.MemberEnd(); ++itr) {
         printf(" merging: %s\n", itr->name.GetString());
@@ -1110,6 +1114,11 @@ string PropertyNode::get_json_string() {
 // Todo make recursive
 bool PropertyNode::set_json_string( string message ) {
     // Document tmpdoc(&(doc->GetAllocator()));
+
+    // if this is created and deleted each time, the memory pool for this
+    // document should get released.  If we reuse the same document, there is a
+    // new allocation for each Parse() call that is never released.
+    Document tmpdoc;
     tmpdoc.Parse<kParseCommentsFlag>(message.c_str(), message.length());
     if ( tmpdoc.HasParseError() ){
         printf("json parse err: %d (%s)\n",
