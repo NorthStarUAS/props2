@@ -69,7 +69,7 @@ PYBIND11_MODULE(PropertyTree, m) {
         .def("save", &PropertyNode::save)
         .def("pretty_print", &PropertyNode::pretty_print)
         .def("get_json_string", &PropertyNode::get_json_string)
-        .def("set_json_string", &PropertyNode::set_json_string)
+        // .def("set_json_string", &PropertyNode::set_json_string) // This one is just too dangerous ... leaks memory or references unallocated memory
     ;
 }
 

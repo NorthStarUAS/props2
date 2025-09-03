@@ -88,7 +88,7 @@ public:
     // void print();
     void pretty_print();
     string get_json_string();
-    bool set_json_string(string message);
+    // bool set_json_string(string message);  // memory leak or referencing deallocated memory problems
 
     SharedStateWrapper get_shared_state() {
         init_shared_state();
@@ -128,7 +128,7 @@ private:
     }
     bool extend_array(Value *node, int size);
     Value *find_node_from_path(Value *start_node, string path, bool create);
-    void recursive_tree_copy(Value &src, Value &dst, string indent);
+    // void recursive_tree_copy(Value &src, Value &dst, string indent);
     void realloc_check();
     bool load_json( const char *file_path, Value *v );
     void recursively_expand_includes(string base_path, Value *v);
