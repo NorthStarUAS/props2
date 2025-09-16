@@ -44,6 +44,18 @@ public:
     bool isArray(const char *name);
     bool isValue(const char *name);
     bool isValue(const char *name, unsigned int index);
+    bool isInt(const char *name);
+    bool isInt(const char *name, unsigned int index);
+    bool isUInt(const char *name);
+    bool isUInt(const char *name, unsigned int index);
+    bool isInt64(const char *name);
+    bool isInt64(const char *name, unsigned int index);
+    bool isBool(const char *name);
+    bool isBool(const char *name, unsigned int index);
+    bool isDouble(const char *name);
+    bool isDouble(const char *name, unsigned int index);
+    bool isString(const char *name);
+    bool isString(const char *name, unsigned int index);
     int getLen( const char *name ); // return len if node is an array (else 0)
 
     vector<string> getChildren(bool expand=true); // return list of children

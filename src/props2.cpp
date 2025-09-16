@@ -207,6 +207,150 @@ bool PropertyNode::isValue(const char *name, unsigned int index) {
     return false;
 }
 
+bool PropertyNode::isInt(const char *name) {
+    realloc_check();
+    if ( val->IsObject() ) {
+        if ( val->HasMember(name) ) {
+            Value &v = (*val)[name];
+            return v.IsInt() && !v.IsArray();
+        }
+    }
+    return false;
+}
+
+bool PropertyNode::isInt(const char *name, unsigned int index) {
+    realloc_check();
+    if ( val->IsObject() ) {
+        if ( val->HasMember(name) ) {
+            Value &v = (*val)[name];
+            if ( v.IsArray() && index < v.Size() ) {
+                return v[index].IsInt() && !v[index].IsArray();
+            }
+        }
+    }
+    return false;
+}
+
+bool PropertyNode::isUInt(const char *name) {
+    realloc_check();
+    if ( val->IsObject() ) {
+        if ( val->HasMember(name) ) {
+            Value &v = (*val)[name];
+            return v.IsUint() && !v.IsArray();
+        }
+    }
+    return false;
+}
+
+bool PropertyNode::isUInt(const char *name, unsigned int index) {
+    realloc_check();
+    if ( val->IsObject() ) {
+        if ( val->HasMember(name) ) {
+            Value &v = (*val)[name];
+            if ( v.IsArray() && index < v.Size() ) {
+                return v[index].IsUint() && !v[index].IsArray();
+            }
+        }
+    }
+    return false;
+}
+
+bool PropertyNode::isInt64(const char *name) {
+    realloc_check();
+    if ( val->IsObject() ) {
+        if ( val->HasMember(name) ) {
+            Value &v = (*val)[name];
+            return v.IsInt64() && !v.IsArray();
+        }
+    }
+    return false;
+}
+
+bool PropertyNode::isInt64(const char *name, unsigned int index) {
+    realloc_check();
+    if ( val->IsObject() ) {
+        if ( val->HasMember(name) ) {
+            Value &v = (*val)[name];
+            if ( v.IsArray() && index < v.Size() ) {
+                return v[index].IsInt64() && !v[index].IsArray();
+            }
+        }
+    }
+    return false;
+}
+
+bool PropertyNode::isBool(const char *name) {
+    realloc_check();
+    if ( val->IsObject() ) {
+        if ( val->HasMember(name) ) {
+            Value &v = (*val)[name];
+            return v.IsBool() && !v.IsArray();
+        }
+    }
+    return false;
+}
+
+bool PropertyNode::isBool(const char *name, unsigned int index) {
+    realloc_check();
+    if ( val->IsObject() ) {
+        if ( val->HasMember(name) ) {
+            Value &v = (*val)[name];
+            if ( v.IsArray() && index < v.Size() ) {
+                return v[index].IsBool() && !v[index].IsArray();
+            }
+        }
+    }
+    return false;
+}
+
+bool PropertyNode::isDouble(const char *name) {
+    realloc_check();
+    if ( val->IsObject() ) {
+        if ( val->HasMember(name) ) {
+            Value &v = (*val)[name];
+            return v.IsDouble() && !v.IsArray();
+        }
+    }
+    return false;
+}
+
+bool PropertyNode::isDouble(const char *name, unsigned int index) {
+    realloc_check();
+    if ( val->IsObject() ) {
+        if ( val->HasMember(name) ) {
+            Value &v = (*val)[name];
+            if ( v.IsArray() && index < v.Size() ) {
+                return v[index].IsDouble() && !v[index].IsArray();
+            }
+        }
+    }
+    return false;
+}
+
+bool PropertyNode::isString(const char *name) {
+    realloc_check();
+    if ( val->IsObject() ) {
+        if ( val->HasMember(name) ) {
+            Value &v = (*val)[name];
+            return v.IsString() && !v.IsArray();
+        }
+    }
+    return false;
+}
+
+bool PropertyNode::isString(const char *name, unsigned int index) {
+    realloc_check();
+    if ( val->IsObject() ) {
+        if ( val->HasMember(name) ) {
+            Value &v = (*val)[name];
+            if ( v.IsArray() && index < v.Size() ) {
+                return v[index].IsString() && !v[index].IsArray();
+            }
+        }
+    }
+    return false;
+}
+
 int PropertyNode::getLen( const char *name ) {
     realloc_check();
     if ( val->IsObject() ) {
