@@ -129,11 +129,11 @@ private:
     inline void init_shared_state() {
         // printf("init_shared_state()\n");
         if ( doc == nullptr ) {
-            printf("  doc is nullptr, creating new document\n");
+            // printf("  doc is nullptr, creating new document\n");
             doc = new Document;
         }
         if ( realloc_check_counter == nullptr ) {
-            printf("  realloc_check_counter is nullptr, creating new realloc_check_counter\n");
+            // printf("  realloc_check_counter is nullptr, creating new realloc_check_counter\n");
             realloc_check_counter = new int;
             *realloc_check_counter = 0;
         }
