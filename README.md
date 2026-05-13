@@ -28,8 +28,12 @@ managing the data flow.
 
 ## Install the python module
 
-    ./setup.py build
-    sudo ./setup.py install
+    pip install .
+
+or
+
+    python -m biuld
+    pip install dist/propertytree-2.0-cp314-cp314-linux_x86_64.whl  # edit name for version of package and python
 
 ## Install the C++ library
 
