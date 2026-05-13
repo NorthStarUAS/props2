@@ -1,0 +1,23 @@
+[build-system]
+requires = [
+  "setuptools>=68",
+  "wheel",
+  "pybind11>=2.10"
+]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "PropertyTree"
+version = "2.0"
+description = "C++/Rapidjson-based Property Tree"
+authors = [
+  { name = "Curtis L. Olson", email = "curtolson@flightgear.org" }
+]
+requires-python = ">=3.8"
+
+[project.urls]
+Homepage = "https://github.com/NorthStarUAS"
+
+[tool.setuptools]
+zip-safe = false
+
